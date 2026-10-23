@@ -1,11 +1,13 @@
 """Synthetic world generator: companies and registry data (SPEC §14, T01), loans and
 account turnovers (T02, `loans.py` and `turnovers.py`), credit-bureau histories (T03,
-`bki.py`), fraud archetypes and clients with incomplete data (T04, `archetypes.py`).
+`bki.py`), fraud archetypes and clients with incomplete data (T04, `archetypes.py`),
+default outcomes and the train/holdout split (T05, `outcomes.py`).
 
-Every company has a hidden quality q ~ N(0, 1) and a hidden archetype. Default
-outcomes (T05) build on them.
+Every company has a hidden quality q ~ N(0, 1), a hidden archetype and a hidden
+default outcome that follows from both.
 
-Reproducibility: the output depends only on (seed, n, as_of). Each company draws
+Reproducibility: the output depends only on (seed, n, as_of) and on the outcome
+parameters in config/world_outcomes.json, which meta.json records. Each company draws
 from its own random streams, derived from the seed, its id and a stream name
 (`company_rng`). A later task adds its own stream, so it never shifts the values
 already generated here. Only the standard library is used.
@@ -27,9 +29,10 @@ from .archetypes import (Archetype, account_profile, declared_revenue, draw_data
 from .bki import add_late_payments, credit_report
 from .industries import BY_KEY, INDUSTRIES, Industry
 from .loans import WorldLoan, draw_loans
+from .outcomes import OutcomeConfig, Sample, draw_outcome, load_outcome_config
 from .turnovers import generate_accounts
 
-GENERATOR_VERSION = 'world-t04-1'
+GENERATOR_VERSION = 'world-t05-1'
 DEFAULT_SEED = 42
 DEFAULT_N = 5000
 DEFAULT_AS_OF = date(2026, 10, 1)
@@ -58,6 +61,10 @@ class Company(BaseModel):
     loans: list[WorldLoan]  # company loans with their late payments; the account and the bureau follow them
     accounts: AccountsPayload
     bki: BkiPayload  # credit-bureau reports on the company and its owner (T03)
+    # Hidden outcome (T05), never shown to the engine
+    pd_12m: float  # true probability of default within 12 months after as_of
+    default_12m: bool  # 90+ days overdue within 12 months after as_of
+    sample: Sample  # train or holdout, drawn independently of the outcome
 
     @property
     def inn(self) -> str:
@@ -71,6 +78,7 @@ class WorldMeta(BaseModel):
     seed: int
     n: int
     as_of: date
+    outcomes: OutcomeConfig  # the config the default outcomes were drawn with (T05)
 
 
 class World(BaseModel):
@@ -85,11 +93,15 @@ def company_rng(seed: int, company_id: str, stream: str) -> random.Random:
     return random.Random(f'{seed}:{company_id}:{stream}')
 
 
-def generate_world(seed: int = DEFAULT_SEED, n: int = DEFAULT_N, as_of: date = DEFAULT_AS_OF) -> World:
+def generate_world(seed: int = DEFAULT_SEED, n: int = DEFAULT_N, as_of: date = DEFAULT_AS_OF,
+                   outcomes: OutcomeConfig | None = None) -> World:
+    """`outcomes` defaults to config/world_outcomes.json."""
     if not 1 <= n <= MAX_N:
         raise ValueError(f'n must be between 1 and {MAX_N}')
-    companies = [_company(seed, idx, as_of) for idx in range(n)]
-    return World(meta=WorldMeta(generator_version=GENERATOR_VERSION, seed=seed, n=n, as_of=as_of),
+    outcomes = outcomes or load_outcome_config()
+    companies = [_company(seed, idx, as_of, outcomes) for idx in range(n)]
+    return World(meta=WorldMeta(generator_version=GENERATOR_VERSION, seed=seed, n=n, as_of=as_of,
+                                outcomes=outcomes),
                  companies=companies)
 
 
@@ -202,7 +214,7 @@ def _round_to(value: float, step: int) -> int:
 
 # --- Company --------------------------------------------------------------------
 
-def _company(seed: int, idx: int, as_of: date) -> Company:
+def _company(seed: int, idx: int, as_of: date, outcomes: OutcomeConfig) -> Company:
     company_id = f'C{idx:05d}'
     rng = company_rng(seed, company_id, 'registry')
     q = rng.gauss(0, 1)
@@ -270,11 +282,15 @@ def _company(seed: int, idx: int, as_of: date) -> Company:
                                      employees=employees, annual_revenue=annual_revenue,
                                      revenue_growth=revenue_growth, registered_at=registered_at, fns=fns,
                                      loans=loans, as_of=as_of, profile=account_profile(archetype_rng, archetype, as_of))
-    return Company(company_id=company_id, q=round(q, 6), archetype=archetype, industry=industry.key,
+    q = round(q, 6)  # the stored q, so that pd_12m can be recomputed from the company alone
+    pd_12m, default_12m, sample = draw_outcome(company_rng(seed, company_id, 'outcome'), outcomes, q=q,
+                                               industry=industry, archetype=archetype)
+    return Company(company_id=company_id, q=q, archetype=archetype, industry=industry.key,
                    legal_form=legal_form, size=size, employees=employees, annual_revenue=annual_revenue,
                    revenue_growth=revenue_growth,
                    declared_annual_revenue=declared_revenue(archetype_rng, archetype, annual_revenue),
-                   egrul=egrul, fns=fns, loans=loans, accounts=accounts, bki=bki)
+                   egrul=egrul, fns=fns, loans=loans, accounts=accounts, bki=bki,
+                   pd_12m=pd_12m, default_12m=default_12m, sample=sample)
 
 
 def _egrul(rng, idx, industry, legal_form, region, region_code, city, prefix, registered_at, as_of, q) -> EgrulPayload:
