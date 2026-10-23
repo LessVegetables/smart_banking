@@ -5,6 +5,10 @@
 - PDF кейса: [PDF кейса](misc/Альфа_Хак_Умный_кредитный_кабинет.pdf)
 - Скретчпад: [Google Docs](https://docs.google.com/document/d/1bBq3X-j__qXCNuKgudN1SdfMK1_qodmA3ulLeML8BAc/edit?usp=sharing)
 
+## Переход на v2
+
+Кредитный конвейер переделывается по спецификации [docs/v2/SPEC.md](docs/v2/SPEC.md); задачи и журнал решений — в [docs/v2/TASKS.md](docs/v2/TASKS.md). Разделы ниже описывают, как запустить и проверить **текущую** сборку (v1). README будет переписан под v2 в задаче T35.
+
 # Альфа · Бизнес
 
 Рабочий локальный MVP по `ARCHITECTURE.md`: веб-кабинет, Telegram Mini App, единый FastAPI backend, адаптивная анкета, детерминированный кредитный движок, документы и рабочее место андеррайтера.

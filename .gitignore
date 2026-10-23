@@ -10,3 +10,4 @@ __pycache__/
 .npm-cache/
 .env.vps
 .docker-cli/
+.DS_Store
