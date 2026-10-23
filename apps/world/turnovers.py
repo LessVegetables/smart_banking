@@ -11,14 +11,16 @@ A weaker company (low q) has noisier receipts, more months without receipts, del
 payroll and tax payments and a thinner cash cushion, so it more often needs money
 from its owner. Each company draws from its own `turnovers` stream.
 
-Fraud archetypes and incomplete-data clients (main account elsewhere, a new account,
-receipts inflated by own transfers) are T04. Here every company banks with us from
-registration on.
+Clients with incomplete data (T04, `archetypes.py`) get an `AccountProfile`: a main
+account at another bank, a recently opened account, or receipts inflated by own
+transfers. The default profile is a regular company that banks with us from
+registration on. The shell company's account is built in `archetypes.py`.
 """
 from __future__ import annotations
 
 import math
 import random
+from dataclasses import dataclass
 from datetime import date, timedelta
 
 from apps.api.contracts import (AccountsPayload, CounterpartySummary, FnsPayload, Inflows, LegalForm,
@@ -40,6 +42,18 @@ TAX_MONTHS = (1, 4, 7, 10)  # revenue tax for the previous quarter
 REVENUE_TAX = {'usn_income': 0.05, 'usn_income_expense': 0.02, 'patent': 0.01, 'osno': 0.04, 'ooo': 0.035}
 
 
+@dataclass(frozen=True)
+class AccountProfile:
+    """How a client's account differs from a regular one (T04). The defaults are a regular client."""
+    opened_at: date | None = None  # new account: opened recently, long after registration
+    our_share: float = 1.0  # main account elsewhere: share of the non-cash business that runs through ours
+    inflated_months: int = 0  # own transfers: the last months with money from the owner's other accounts
+    inflation: float = 0.0  # that money per month, as a share of average monthly receipts
+
+
+REGULAR = AccountProfile()
+
+
 def _sigmoid(x: float) -> float:
     return 1 / (1 + math.exp(-x))
 
@@ -56,11 +70,13 @@ def _noise(rng: random.Random, sigma: float) -> float:
 
 def generate_accounts(rng: random.Random, *, q: float, industry: Industry, legal_form: LegalForm,
                       employees: int, annual_revenue: int, revenue_growth: float, registered_at: date,
-                      fns: FnsPayload, loans: list[WorldLoan], as_of: date) -> AccountsPayload:
+                      fns: FnsPayload, loans: list[WorldLoan], as_of: date,
+                      profile: AccountProfile = REGULAR) -> AccountsPayload:
     ip = legal_form == LegalForm.IP
-    # SIMPLIFICATION: every company opens its account with us right after registration and
-    # runs all non-cash revenue through it. T04 adds clients who bank mostly elsewhere.
-    opened_at =min(registered_at + timedelta(days=rng.randint(0, 45)), as_of - timedelta(days=1))
+    # SIMPLIFICATION: a regular client opens its account with us right after registration and
+    # runs all non-cash revenue through it; the profile changes that for clients with incomplete data.
+    opened_at = profile.opened_at or min(registered_at + timedelta(days=rng.randint(0, 45)),
+                                         as_of - timedelta(days=1))
     last = last_full_month(as_of)
     first = max(last - HISTORY_MONTHS + 1, first_full_month(opened_at))
     months = range(first, last + 1)
@@ -68,7 +84,9 @@ def generate_accounts(rng: random.Random, *, q: float, industry: Industry, legal
     # --- Receipts from customers -------------------------------------------------
     # SIMPLIFICATION: cash takings never reach the account; all other revenue does.
     cash_part = min(0.5, industry.cash_share * rng.uniform(0.6, 1.4))
-    base = annual_revenue / 12 * (1 - cash_part)  # average monthly receipts over the last 12 months
+    # SIMPLIFICATION: a client whose main account is elsewhere runs the same share of all its
+    # operations through ours; in reality different customers and payments go through each bank.
+    base = annual_revenue / 12 * (1 - cash_part) * profile.our_share  # average monthly receipts, last 12 months
     growth = (1 + revenue_growth) ** (1 / 12)
 
     def shape(m: int) -> float:  # seasonality and trend, centred on the last 12 months
@@ -154,6 +172,12 @@ def generate_accounts(rng: random.Random, *, q: float, industry: Industry, legal
             founder_contributions=0,
             other=_rub(base * rng.uniform(0.002, 0.015)) if rng.random() < 0.15 else 0,  # refunds, interest
         )
+        if m > last - profile.inflated_months:
+            # SIMPLIFICATION: money from the owner's other accounts or a founder loan comes in
+            # and mostly leaves within the same month; real round trips take their own time.
+            pumped = _rub(base * profile.inflation * _noise(rng, 0.3))
+            inflows['own_transfers' if ip or rng.random() < 0.5 else 'founder_contributions'] += pumped
+            outflows['own_transfers'] += _rub(pumped * rng.uniform(0.85, 1.0))
 
         start = balance
         balance += sum(inflows.values()) - sum(outflows.values())
@@ -176,10 +200,11 @@ def generate_accounts(rng: random.Random, *, q: float, industry: Industry, legal
                                       outflows=Outflows(**outflows), average_balance=_rub((start + balance) / 2)))
 
     return AccountsPayload(account_opened_at=opened_at, months=result,
-                           counterparties_12m=_counterparties(rng, q, industry, annual_revenue, result))
+                           counterparties_12m=_counterparties(rng, q, industry, annual_revenue * profile.our_share,
+                                                              result))
 
 
-def _counterparties(rng: random.Random, q: float, industry: Industry, annual_revenue: int,
+def _counterparties(rng: random.Random, q: float, industry: Industry, annual_revenue: float,
                     months: list[MonthlyTurnover]) -> CounterpartySummary:
     last12 = months[-12:]
     scale = math.sqrt(annual_revenue / industry.revenue_median)
