@@ -1,0 +1,3 @@
+[submodule "alfa_hack"]
+	path = alfa_hack
+	url = https://github.com/Aleksey294/alfa_hack.git
