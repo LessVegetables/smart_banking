@@ -1,9 +1,9 @@
 """Synthetic world generator: companies and registry data (SPEC §14, T01), loans and
 account turnovers (T02, `loans.py` and `turnovers.py`), credit-bureau histories (T03,
-`bki.py`).
+`bki.py`), fraud archetypes and clients with incomplete data (T04, `archetypes.py`).
 
-Every company has a hidden quality q ~ N(0, 1). Later tasks build on it: fraud
-archetypes and incomplete data (T04) and default outcomes (T05).
+Every company has a hidden quality q ~ N(0, 1) and a hidden archetype. Default
+outcomes (T05) build on them.
 
 Reproducibility: the output depends only on (seed, n, as_of). Each company draws
 from its own random streams, derived from the seed, its id and a stream name
@@ -22,12 +22,14 @@ from pydantic import BaseModel, ConfigDict
 from apps.api.contracts import (AccountsPayload, BkiPayload, EgrulPayload, FnsPayload, Founder, GirBoReport, LegalForm,
                                 Person, TaxReturn)
 
+from .archetypes import (Archetype, account_profile, declared_revenue, draw_data_gap, draw_fraud, shell_accounts,
+                         shell_registry)
 from .bki import add_late_payments, credit_report
 from .industries import BY_KEY, INDUSTRIES, Industry
 from .loans import WorldLoan, draw_loans
 from .turnovers import generate_accounts
 
-GENERATOR_VERSION = 'world-t03-1'
+GENERATOR_VERSION = 'world-t04-1'
 DEFAULT_SEED = 42
 DEFAULT_N = 5000
 DEFAULT_AS_OF = date(2026, 10, 1)
@@ -43,12 +45,14 @@ class Company(BaseModel):
 
     company_id: str
     q: float  # hidden quality, never shown to the engine
+    archetype: Archetype  # hidden fraud or data-gap archetype (T04), never shown to the engine
     industry: str
     legal_form: LegalForm
     size: Literal['micro', 'small']
     employees: int
     annual_revenue: int  # true revenue over the 12 months before as_of
     revenue_growth: float  # true yearly growth, used for trends in T02
+    declared_annual_revenue: int  # what the client would declare in an application (T04)
     egrul: EgrulPayload
     fns: FnsPayload
     loans: list[WorldLoan]  # company loans with their late payments; the account and the bureau follow them
@@ -238,22 +242,39 @@ def _company(seed: int, idx: int, as_of: date) -> Company:
 
     revenue_growth = round(min(max(rng.gauss(0.05 + 0.08 * q, 0.12), -0.5), 0.8), 4)
 
+    archetype_rng = company_rng(seed, company_id, 'archetype')
+    archetype = draw_fraud(archetype_rng, q=q, legal_form=legal_form, size=size, age_days=age_days)
+
     egrul = _egrul(rng, idx, industry, legal_form, region, region_code, city, prefix, registered_at, as_of, q)
     fns = _fns(rng, legal_form, industry, q, annual_revenue, revenue_growth, employees, registered_at, as_of)
-    loans = draw_loans(company_rng(seed, company_id, 'loans'), company_id, q, industry, legal_form,
-                       annual_revenue, registered_at, as_of)
+    loans = []  # a shell borrows nothing from us
+    if archetype == 'shell':
+        egrul, fns = shell_registry(archetype_rng, egrul, fns)
+        employees = fns.employees
+    else:
+        loans = draw_loans(company_rng(seed, company_id, 'loans'), company_id, q, industry, legal_form,
+                           annual_revenue, registered_at, as_of)
     bki_rng = company_rng(seed, company_id, 'bki')
     loans = add_late_payments(bki_rng, loans, q, as_of)  # before the account, which follows them
-    accounts = generate_accounts(company_rng(seed, company_id, 'turnovers'), q=q, industry=industry,
-                                 legal_form=legal_form, employees=employees, annual_revenue=annual_revenue,
-                                 revenue_growth=revenue_growth, registered_at=registered_at, fns=fns,
-                                 loans=loans, as_of=as_of)
     bki = credit_report(bki_rng, company_id=company_id, q=q, egrul=egrul, annual_revenue=annual_revenue,
                         loans=loans, as_of=as_of)
-    return Company(company_id=company_id, q=round(q, 6), industry=industry.key, legal_form=legal_form,
-                   size=size, employees=employees, annual_revenue=annual_revenue,
-                   revenue_growth=revenue_growth, egrul=egrul, fns=fns, loans=loans, accounts=accounts,
-                   bki=bki)
+    if archetype == 'regular':
+        archetype = draw_data_gap(archetype_rng, q=q, age_days=age_days, loans=loans, bki=bki)
+
+    turnovers_rng = company_rng(seed, company_id, 'turnovers')
+    if archetype == 'shell':
+        accounts = shell_accounts(turnovers_rng, annual_revenue=annual_revenue, registered_at=registered_at,
+                                  as_of=as_of)
+    else:
+        accounts = generate_accounts(turnovers_rng, q=q, industry=industry, legal_form=legal_form,
+                                     employees=employees, annual_revenue=annual_revenue,
+                                     revenue_growth=revenue_growth, registered_at=registered_at, fns=fns,
+                                     loans=loans, as_of=as_of, profile=account_profile(archetype_rng, archetype, as_of))
+    return Company(company_id=company_id, q=round(q, 6), archetype=archetype, industry=industry.key,
+                   legal_form=legal_form, size=size, employees=employees, annual_revenue=annual_revenue,
+                   revenue_growth=revenue_growth,
+                   declared_annual_revenue=declared_revenue(archetype_rng, archetype, annual_revenue),
+                   egrul=egrul, fns=fns, loans=loans, accounts=accounts, bki=bki)
 
 
 def _egrul(rng, idx, industry, legal_form, region, region_code, city, prefix, registered_at, as_of, q) -> EgrulPayload:
@@ -334,7 +355,7 @@ def _fns(rng, legal_form, industry, q, annual_revenue, growth, employees, regist
             tax_return = TaxReturn(year=year, regime=regime, income=filed)
 
     return FnsPayload(tax_debt=tax_debt, accounts_suspended=suspended,
-                      mass_address=False,  # mass addresses are a fraud archetype (T04)
+                      mass_address=False,  # only a shell company sits at a mass address (T04)
                       director_disqualified=disqualified, employees=employees,
                       financials=financials, tax_return=tax_return)
 
