@@ -56,7 +56,7 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 
 | ID | Task | Size | Depends on | Status | Owner / PR |
 |---|---|---|---|---|---|
-| T01 | World generator: companies, latent quality `q`, industries, registry data (seeded, reproducible) | S | T00 | review | branch `t01-world-generator` |
+| T01 | World generator: companies, latent quality `q`, industries, registry data (seeded, reproducible) | S | T00 | done | PR #2 |
 | T02 | Monthly account turnovers by category (customers, suppliers, payroll, taxes, rent, loans, cash, own transfers), seasonality and trend | M | T01 | review | branch `t02-account-turnovers` |
 | T03 | Credit-bureau histories for company and owner: loans, delinquencies, inquiries | M | T01 | todo | |
 | T04 | Fraud archetypes (shell, inflater), declared-vs-real noise, incomplete-data clients (main account elsewhere, new account, inflated by own transfers) | S | T02, T03 | todo | |
