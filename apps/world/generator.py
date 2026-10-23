@@ -1,8 +1,9 @@
-"""Synthetic world generator, part 1: companies and registry data (SPEC §14, T01).
+"""Synthetic world generator: companies and registry data (SPEC §14, T01), loans and
+account turnovers (T02, `loans.py` and `turnovers.py`).
 
-Every company has a hidden quality q ~ N(0, 1). Later tasks build on it: account
-turnovers (T02), credit-bureau histories (T03), fraud archetypes and incomplete
-data (T04) and default outcomes (T05).
+Every company has a hidden quality q ~ N(0, 1). Later tasks build on it:
+credit-bureau histories (T03), fraud archetypes and incomplete data (T04) and
+default outcomes (T05).
 
 Reproducibility: the output depends only on (seed, n, as_of). Each company draws
 from its own random streams, derived from the seed, its id and a stream name
@@ -18,11 +19,14 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from apps.api.contracts import EgrulPayload, FnsPayload, Founder, GirBoReport, LegalForm, Person, TaxReturn
+from apps.api.contracts import (AccountsPayload, EgrulPayload, FnsPayload, Founder, GirBoReport, LegalForm, Person,
+                                TaxReturn)
 
 from .industries import BY_KEY, INDUSTRIES, Industry
+from .loans import WorldLoan, draw_loans
+from .turnovers import generate_accounts
 
-GENERATOR_VERSION = 'world-t01-1'
+GENERATOR_VERSION = 'world-t02-1'
 DEFAULT_SEED = 42
 DEFAULT_N = 5000
 DEFAULT_AS_OF = date(2026, 10, 1)
@@ -46,6 +50,8 @@ class Company(BaseModel):
     revenue_growth: float  # true yearly growth, used for trends in T02
     egrul: EgrulPayload
     fns: FnsPayload
+    loans: list[WorldLoan]  # company loans; T03 builds the credit-bureau report from them
+    accounts: AccountsPayload
 
     @property
     def inn(self) -> str:
@@ -232,9 +238,15 @@ def _company(seed: int, idx: int, as_of: date) -> Company:
 
     egrul = _egrul(rng, idx, industry, legal_form, region, region_code, city, prefix, registered_at, as_of, q)
     fns = _fns(rng, legal_form, industry, q, annual_revenue, revenue_growth, employees, registered_at, as_of)
+    loans = draw_loans(company_rng(seed, company_id, 'loans'), company_id, q, industry, legal_form,
+                       annual_revenue, registered_at, as_of)
+    accounts = generate_accounts(company_rng(seed, company_id, 'turnovers'), q=q, industry=industry,
+                                 legal_form=legal_form, employees=employees, annual_revenue=annual_revenue,
+                                 revenue_growth=revenue_growth, registered_at=registered_at, fns=fns,
+                                 loans=loans, as_of=as_of)
     return Company(company_id=company_id, q=round(q, 6), industry=industry.key, legal_form=legal_form,
                    size=size, employees=employees, annual_revenue=annual_revenue,
-                   revenue_growth=revenue_growth, egrul=egrul, fns=fns)
+                   revenue_growth=revenue_growth, egrul=egrul, fns=fns, loans=loans, accounts=accounts)
 
 
 def _egrul(rng, idx, industry, legal_form, region, region_code, city, prefix, registered_at, as_of, q) -> EgrulPayload:
