@@ -50,13 +50,13 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 
 | ID | Task | Size | Depends on | Status | Owner / PR |
 |---|---|---|---|---|---|
-| T00 | Contracts: Pydantic models in `apps/api/contracts.py` + example JSON per source in `tests/fixtures/` (source payloads, `Fact`, `DataQuality`, features, engine output) | S | — | review | branch `t00-contracts` |
+| T00 | Contracts: Pydantic models in `apps/api/contracts.py` + example JSON per source in `tests/fixtures/` (source payloads, `Fact`, `DataQuality`, features, engine output) | S | — | done | PR #1 |
 
 ### Track 1 — World & sources
 
 | ID | Task | Size | Depends on | Status | Owner / PR |
 |---|---|---|---|---|---|
-| T01 | World generator: companies, latent quality `q`, industries, registry data (seeded, reproducible) | S | T00 | todo | |
+| T01 | World generator: companies, latent quality `q`, industries, registry data (seeded, reproducible) | S | T00 | review | branch `t01-world-generator` |
 | T02 | Monthly account turnovers by category (customers, suppliers, payroll, taxes, rent, loans, cash, own transfers), seasonality and trend | M | T01 | todo | |
 | T03 | Credit-bureau histories for company and owner: loans, delinquencies, inquiries | M | T01 | todo | |
 | T04 | Fraud archetypes (shell, inflater), declared-vs-real noise, incomplete-data clients (main account elsewhere, new account, inflated by own transfers) | S | T02, T03 | todo | |
