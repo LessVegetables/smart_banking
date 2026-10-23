@@ -1,0 +1,54 @@
+{
+  "contract_version": "1.0",
+  "application_id": "app-0003",
+  "status": "declined",
+  "matches_request": null,
+  "route": "auto",
+  "route_reasons": [
+    {
+      "code": "route_stop_factor",
+      "staff_text": "Стоп-фактор: автоматический отказ",
+      "client_text": "Решение принято автоматически."
+    }
+  ],
+  "reasons": [],
+  "stop_factors": [
+    {
+      "code": "bki_overdue_90_24m",
+      "staff_text": "БКИ (собственник): просрочка 95 дней, начало 12.06.2025 — в окне 24 мес.",
+      "client_text": "В кредитной истории есть просрочка больше 90 дней за последние 2 года."
+    }
+  ],
+  "flags": [],
+  "score": null,
+  "challenger": null,
+  "data_quality": {
+    "history_months": {
+      "value": 4.0,
+      "tier": "THIN"
+    },
+    "revenue_coverage": {
+      "value": 0.158,
+      "tier": "THIN"
+    },
+    "operating_inflow_share": {
+      "value": 0.91,
+      "tier": "FULL"
+    },
+    "regularity_months": {
+      "value": 4.0,
+      "tier": "THIN"
+    },
+    "revenue_basis": "fns",
+    "tier": "THIN",
+    "client_message": "Мы видим только часть оборотов вашего бизнеса: счёт открыт недавно. Чтобы рассчитать лимит, понадобятся выписки из других банков.",
+    "policy_version": "policy_v0"
+  },
+  "offers": [],
+  "counterfactuals": [],
+  "requested_documents": [],
+  "reapply_after": "2027-06-12",
+  "model_version": null,
+  "policy_version": "policy_v0",
+  "decided_at": "2026-10-24T10:16:05+03:00"
+}

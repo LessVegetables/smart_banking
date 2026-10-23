@@ -1,0 +1,22 @@
+{
+  "inn": "5406000001",
+  "status": "ok",
+  "requested_at": "2026-10-24T10:15:00+03:00",
+  "received_at": "2026-10-24T10:15:01.340000+03:00",
+  "latency_ms": 1340,
+  "attempts": 1,
+  "error": null,
+  "source": "arbitration",
+  "payload": {
+    "cases": [
+      {
+        "number": "А45-00001/2026",
+        "role": "plaintiff",
+        "filed_at": "2026-03-17",
+        "claim_amount": 84000,
+        "status": "decided"
+      }
+    ],
+    "bankruptcy_notices": []
+  }
+}

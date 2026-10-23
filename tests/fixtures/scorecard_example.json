@@ -1,0 +1,246 @@
+{
+  "version": "example_v0",
+  "origin": "hand_set",
+  "created_at": "2026-10-24",
+  "description": "Пример формата для тестов и экранов. Не рабочая модель: веса подобраны вручную.",
+  "scaling": {
+    "base_points": 600.0,
+    "base_odds": 50.0,
+    "pdo": 20.0
+  },
+  "intercept_points": 420.0,
+  "features": [
+    {
+      "name": "business_age_months",
+      "label": "Возраст бизнеса",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "меньше 12 мес.",
+          "lower": null,
+          "upper": 12.0,
+          "categories": null,
+          "missing": false,
+          "woe": -0.62,
+          "points": 8.0
+        },
+        {
+          "label": "12–35 мес.",
+          "lower": 12.0,
+          "upper": 36.0,
+          "categories": null,
+          "missing": false,
+          "woe": -0.1,
+          "points": 24.0
+        },
+        {
+          "label": "36 мес. и больше",
+          "lower": 36.0,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": 0.41,
+          "points": 38.0
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": null,
+          "points": 10.0
+        }
+      ]
+    },
+    {
+      "name": "inflow_cv_12m",
+      "label": "Волатильность поступлений",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "меньше 0,15",
+          "lower": null,
+          "upper": 0.15,
+          "categories": null,
+          "missing": false,
+          "woe": 0.35,
+          "points": 40.0
+        },
+        {
+          "label": "0,15–0,35",
+          "lower": 0.15,
+          "upper": 0.35,
+          "categories": null,
+          "missing": false,
+          "woe": 0.02,
+          "points": 30.0
+        },
+        {
+          "label": "0,35 и больше",
+          "lower": 0.35,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": -0.55,
+          "points": 14.0
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": null,
+          "points": 18.0
+        }
+      ]
+    },
+    {
+      "name": "worst_delinquency_days_24m_company",
+      "label": "Худшая просрочка компании за 24 мес.",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "нет просрочек",
+          "lower": null,
+          "upper": 1.0,
+          "categories": null,
+          "missing": false,
+          "woe": 0.3,
+          "points": 42.0
+        },
+        {
+          "label": "1–29 дней",
+          "lower": 1.0,
+          "upper": 30.0,
+          "categories": null,
+          "missing": false,
+          "woe": -0.4,
+          "points": 20.0
+        },
+        {
+          "label": "30 дней и больше",
+          "lower": 30.0,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": -1.2,
+          "points": 0.0
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": null,
+          "points": 30.0
+        }
+      ]
+    },
+    {
+      "name": "bki_inquiries_3m",
+      "label": "Запросы кредитной истории за 3 мес.",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "0–1",
+          "lower": null,
+          "upper": 2.0,
+          "categories": null,
+          "missing": false,
+          "woe": 0.2,
+          "points": 34.0
+        },
+        {
+          "label": "2–3",
+          "lower": 2.0,
+          "upper": 4.0,
+          "categories": null,
+          "missing": false,
+          "woe": -0.15,
+          "points": 24.0
+        },
+        {
+          "label": "4 и больше",
+          "lower": 4.0,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": -0.7,
+          "points": 8.0
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": null,
+          "points": 20.0
+        }
+      ]
+    },
+    {
+      "name": "legal_form",
+      "label": "Правовая форма",
+      "kind": "categorical",
+      "bins": [
+        {
+          "label": "ООО",
+          "lower": null,
+          "upper": null,
+          "categories": [
+            "ooo"
+          ],
+          "missing": false,
+          "woe": 0.05,
+          "points": 28.0
+        },
+        {
+          "label": "ИП",
+          "lower": null,
+          "upper": null,
+          "categories": [
+            "ip"
+          ],
+          "missing": false,
+          "woe": -0.06,
+          "points": 24.0
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": null,
+          "points": 24.0
+        }
+      ]
+    }
+  ],
+  "grades": [
+    {
+      "grade": "A",
+      "pd_max": 0.015
+    },
+    {
+      "grade": "B",
+      "pd_max": 0.03
+    },
+    {
+      "grade": "C",
+      "pd_max": 0.06
+    },
+    {
+      "grade": "D",
+      "pd_max": 0.12
+    },
+    {
+      "grade": "E",
+      "pd_max": null
+    }
+  ]
+}

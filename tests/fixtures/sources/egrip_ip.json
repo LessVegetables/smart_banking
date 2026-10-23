@@ -1,0 +1,28 @@
+{
+  "inn": "540700000002",
+  "status": "ok",
+  "requested_at": "2026-10-24T10:15:00+03:00",
+  "received_at": "2026-10-24T10:15:00.760000+03:00",
+  "latency_ms": 760,
+  "attempts": 1,
+  "error": null,
+  "source": "egrul",
+  "payload": {
+    "inn": "540700000002",
+    "ogrn": "326540000000012",
+    "legal_form": "ip",
+    "name": "ИП Петрова Мария Сергеевна",
+    "status": "active",
+    "registered_at": "2026-04-02",
+    "okved_main": "96.02",
+    "okved_extra": [],
+    "region": "Новосибирская область",
+    "address": "г. Новосибирск, ул. Примерная, д. 2",
+    "director": {
+      "full_name": "Петрова Мария Сергеевна",
+      "inn": "540700000002",
+      "since": "2026-04-02"
+    },
+    "founders": []
+  }
+}

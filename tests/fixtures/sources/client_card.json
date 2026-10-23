@@ -1,0 +1,31 @@
+{
+  "inn": "5406000001",
+  "status": "ok",
+  "requested_at": "2026-10-24T10:15:00+03:00",
+  "received_at": "2026-10-24T10:15:00.060000+03:00",
+  "latency_ms": 60,
+  "attempts": 1,
+  "error": null,
+  "source": "client_card",
+  "payload": {
+    "client_since": "2023-11-15",
+    "products": [
+      {
+        "kind": "account",
+        "opened_at": "2023-11-15",
+        "amount": null,
+        "balance": 342000,
+        "monthly_payment": null
+      },
+      {
+        "kind": "card",
+        "opened_at": "2024-02-01",
+        "amount": null,
+        "balance": null,
+        "monthly_payment": null
+      }
+    ],
+    "internal_stop_list": false,
+    "related_companies": []
+  }
+}

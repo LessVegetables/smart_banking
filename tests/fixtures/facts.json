@@ -1,0 +1,83 @@
+[
+  {
+    "name": "legal_form",
+    "declared_value": "ooo",
+    "verified_value": "ooo",
+    "source": "egrul",
+    "trust_level": "registry",
+    "fetched_at": "2026-10-24T10:15:00.820000+03:00",
+    "discrepancy": null
+  },
+  {
+    "name": "business_age_months",
+    "declared_value": null,
+    "verified_value": 36,
+    "source": "egrul",
+    "trust_level": "registry",
+    "fetched_at": "2026-10-24T10:15:00.820000+03:00",
+    "discrepancy": null
+  },
+  {
+    "name": "okved_main",
+    "declared_value": null,
+    "verified_value": "10.71",
+    "source": "egrul",
+    "trust_level": "registry",
+    "fetched_at": "2026-10-24T10:15:00.820000+03:00",
+    "discrepancy": null
+  },
+  {
+    "name": "director_changed_6m",
+    "declared_value": null,
+    "verified_value": false,
+    "source": "egrul",
+    "trust_level": "registry",
+    "fetched_at": "2026-10-24T10:15:00.820000+03:00",
+    "discrepancy": null
+  },
+  {
+    "name": "annual_revenue",
+    "declared_value": 12500000,
+    "verified_value": 12690000,
+    "source": "fns",
+    "trust_level": "registry",
+    "fetched_at": "2026-10-24T10:15:01.930000+03:00",
+    "discrepancy": 0.014972419227738377
+  },
+  {
+    "name": "employees",
+    "declared_value": 14,
+    "verified_value": 13,
+    "source": "fns",
+    "trust_level": "registry",
+    "fetched_at": "2026-10-24T10:15:01.930000+03:00",
+    "discrepancy": 0.07692307692307693
+  },
+  {
+    "name": "operating_inflows_12m",
+    "declared_value": null,
+    "verified_value": 12881800,
+    "source": "accounts",
+    "trust_level": "bank",
+    "fetched_at": "2026-10-24T10:15:00.140000+03:00",
+    "discrepancy": null
+  },
+  {
+    "name": "monthly_debt_payments",
+    "declared_value": null,
+    "verified_value": 15270,
+    "source": "bki",
+    "trust_level": "registry",
+    "fetched_at": "2026-10-24T10:15:02.450000+03:00",
+    "discrepancy": null
+  },
+  {
+    "name": "loan_purpose",
+    "declared_value": "inventory",
+    "verified_value": null,
+    "source": null,
+    "trust_level": "declared",
+    "fetched_at": null,
+    "discrepancy": null
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "inn": "540700000002",
+  "status": "ok",
+  "requested_at": "2026-10-24T10:15:00+03:00",
+  "received_at": "2026-10-24T10:15:01.710000+03:00",
+  "latency_ms": 1710,
+  "attempts": 1,
+  "error": null,
+  "source": "fns",
+  "payload": {
+    "tax_debt": 0,
+    "accounts_suspended": false,
+    "mass_address": false,
+    "director_disqualified": false,
+    "employees": 0,
+    "financials": null,
+    "tax_return": {
+      "year": 2025,
+      "regime": "usn_income",
+      "income": 2400000
+    }
+  }
+}

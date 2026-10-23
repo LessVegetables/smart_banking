@@ -1,0 +1,22 @@
+{
+  "history_months": {
+    "value": 24.0,
+    "tier": "FULL"
+  },
+  "revenue_coverage": {
+    "value": 1.015,
+    "tier": "FULL"
+  },
+  "operating_inflow_share": {
+    "value": 0.991,
+    "tier": "FULL"
+  },
+  "regularity_months": {
+    "value": 12.0,
+    "tier": "FULL"
+  },
+  "revenue_basis": "fns",
+  "tier": "FULL",
+  "client_message": "Мы видим почти все обороты вашего бизнеса — этого достаточно для автоматического решения.",
+  "policy_version": "policy_v0"
+}
