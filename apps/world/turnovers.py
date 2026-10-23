@@ -2,9 +2,10 @@
 
 Up to 24 full months before as_of, in the `AccountsPayload` contract format. Customer
 receipts follow the company's revenue, its industry's seasonality and its growth
-trend. Costs follow the industry's cost structure, loan payments follow the loans
-from `loans.py`, and the balance is simulated month by month: a surplus goes to the
-owner, a shortfall is covered by the owner.
+trend. Costs follow the industry's cost structure, loan payments follow the actual
+payments of the loans from `loans.py` (late payments included, T03), and the balance
+is simulated month by month: a surplus goes to the owner, a shortfall is covered by
+the owner.
 
 A weaker company (low q) has noisier receipts, more months without receipts, delayed
 payroll and tax payments and a thinner cash cushion, so it more often needs money
@@ -24,7 +25,7 @@ from apps.api.contracts import (AccountsPayload, CounterpartySummary, FnsPayload
                                 MonthlyTurnover, Outflows)
 
 from .industries import Industry
-from .loans import WorldLoan
+from .loans import WorldLoan, payments_by_month
 from .months import calendar_month, first_full_month, last_full_month, month_index, month_name
 
 HISTORY_MONTHS = 24
@@ -119,6 +120,7 @@ def generate_accounts(rng: random.Random, *, q: float, industry: Industry, legal
     # A company with tax debt in ФНС stops paying taxes over the last months.
     tax_debt_months = 6 if fns.tax_debt > 0 else 0
     payroll_due = tax_due = 0.0
+    loan_paid = payments_by_month(loans)
 
     result = []
     for m in months:
@@ -140,7 +142,7 @@ def generate_accounts(rng: random.Random, *, q: float, industry: Industry, legal
             payroll=payroll,
             taxes=tax,
             rent=_rub(rent_base * index),
-            loan_payments=sum(x.monthly_payment for x in loans if x.pays_in(m)),
+            loan_payments=loan_paid[m],
             cash_withdrawals=_rub(base * rng.uniform(0.005, 0.02)),
             own_transfers=0,
             other=_rub(other_share * (0.5 * base + 0.5 * level[m]) * _noise(rng, 0.1)),
