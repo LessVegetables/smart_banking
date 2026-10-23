@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: alfa
+      POSTGRES_USER: alfa
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U alfa]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  api:
+    build: .
+    ports:
+      - '127.0.0.1:8000:8000'
+    environment: &backend-environment
+      DATABASE_URL: postgresql+psycopg://alfa:${POSTGRES_PASSWORD}@db:5432/alfa
+      DEMO_MODE: 'true'
+      APP_ORIGIN: http://127.0.0.1:8000
+      STAFF_PASSWORD: ${STAFF_PASSWORD:?Set STAFF_PASSWORD in .env}
+      WORKER_ENABLED: 'false'
+      DATA_DIR: /app/data
+    volumes:
+      - documents:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  worker:
+    build: .
+    command: [python, -m, apps.api.worker]
+    environment: *backend-environment
+    volumes:
+      - documents:/app/data
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  postgres-data:
+  documents:

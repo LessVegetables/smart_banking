@@ -1,0 +1,78 @@
+name: alfa-hack-vps
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: alfa
+      POSTGRES_USER: alfa
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run bash deploy.sh first}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U alfa -d alfa]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  api:
+    build: .
+    image: alfa-hack-app:local
+    restart: unless-stopped
+    environment: &backend
+      DATABASE_URL: postgresql+psycopg://alfa:${POSTGRES_PASSWORD}@db:5432/alfa
+      DEMO_MODE: 'true'
+      APP_ORIGIN: ${APP_ORIGIN:?Specify the public URL}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      STAFF_PASSWORD: ${STAFF_PASSWORD:?Run bash deploy.sh first}
+      WORKER_ENABLED: 'false'
+      DATA_DIR: /app/data
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      ASSISTANT_LLM_ENABLED: ${ASSISTANT_LLM_ENABLED:-false}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+    volumes:
+      - documents:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 5s
+      timeout: 3s
+      start_period: 20s
+      retries: 20
+  worker:
+    image: alfa-hack-app:local
+    restart: unless-stopped
+    command: [python, -m, apps.api.worker]
+    environment: *backend
+    volumes:
+      - documents:/app/data
+    depends_on:
+      api:
+        condition: service_healthy
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      APP_ORIGIN: ${APP_ORIGIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  postgres-data:
+  documents:
+  caddy-data:
+  caddy-config:

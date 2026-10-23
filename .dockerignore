@@ -1,0 +1,12 @@
+.venv
+node_modules
+.npm-cache
+data
+dist
+.env
+.git
+__pycache__
+.pytest_cache
+tests
+.env.*
+.docker-cli
