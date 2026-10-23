@@ -1,0 +1,27 @@
+{
+  "inn": "5406000001",
+  "status": "ok",
+  "requested_at": "2026-10-24T10:15:00+03:00",
+  "received_at": "2026-10-24T10:15:01.930000+03:00",
+  "latency_ms": 1930,
+  "attempts": 1,
+  "error": null,
+  "source": "fns",
+  "payload": {
+    "tax_debt": 0,
+    "accounts_suspended": false,
+    "mass_address": false,
+    "director_disqualified": false,
+    "employees": 13,
+    "financials": {
+      "year": 2025,
+      "revenue": 12690000,
+      "cost_of_sales": 5964000,
+      "net_profit": 914000,
+      "total_assets": 4850000,
+      "equity": 2310000,
+      "liabilities": 2540000
+    },
+    "tax_return": null
+  }
+}

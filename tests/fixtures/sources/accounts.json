@@ -1,0 +1,524 @@
+{
+  "inn": "5406000001",
+  "status": "ok",
+  "requested_at": "2026-10-24T10:15:00+03:00",
+  "received_at": "2026-10-24T10:15:00.140000+03:00",
+  "latency_ms": 140,
+  "attempts": 1,
+  "error": null,
+  "source": "accounts",
+  "payload": {
+    "account_opened_at": "2023-11-15",
+    "months": [
+      {
+        "month": "2024-10",
+        "inflows": {
+          "customers": 1050000,
+          "own_transfers": 0,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 0
+        },
+        "outflows": {
+          "suppliers": 472500,
+          "payroll": 268000,
+          "taxes": 63000,
+          "rent": 80000,
+          "loan_payments": 0,
+          "cash_withdrawals": 21000,
+          "own_transfers": 0,
+          "other": 10500
+        },
+        "average_balance": 310000
+      },
+      {
+        "month": "2024-11",
+        "inflows": {
+          "customers": 1076300,
+          "own_transfers": 0,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 0
+        },
+        "outflows": {
+          "suppliers": 484300,
+          "payroll": 268000,
+          "taxes": 64600,
+          "rent": 80000,
+          "loan_payments": 0,
+          "cash_withdrawals": 21500,
+          "own_transfers": 0,
+          "other": 10800
+        },
+        "average_balance": 331000
+      },
+      {
+        "month": "2024-12",
+        "inflows": {
+          "customers": 1082700,
+          "own_transfers": 0,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 4800
+        },
+        "outflows": {
+          "suppliers": 487200,
+          "payroll": 268000,
+          "taxes": 65000,
+          "rent": 80000,
+          "loan_payments": 0,
+          "cash_withdrawals": 21700,
+          "own_transfers": 0,
+          "other": 10800
+        },
+        "average_balance": 336000
+      },
+      {
+        "month": "2025-01",
+        "inflows": {
+          "customers": 960000,
+          "own_transfers": 0,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 0
+        },
+        "outflows": {
+          "suppliers": 432000,
+          "payroll": 268000,
+          "taxes": 57600,
+          "rent": 80000,
+          "loan_payments": 0,
+          "cash_withdrawals": 19200,
+          "own_transfers": 0,
+          "other": 9600
+        },
+        "average_balance": 325000
+      },
+      {
+        "month": "2025-02",
+        "inflows": {
+          "customers": 969100,
+          "own_transfers": 50000,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 0
+        },
+        "outflows": {
+          "suppliers": 436100,
+          "payroll": 268000,
+          "taxes": 58100,
+          "rent": 80000,
+          "loan_payments": 0,
+          "cash_withdrawals": 19400,
+          "own_transfers": 0,
+          "other": 9700
+        },
+        "average_balance": 311000
+      },
+      {
+        "month": "2025-03",
+        "inflows": {
+          "customers": 1007400,
+          "own_transfers": 0,
+          "loans_received": 300000,
+          "founder_contributions": 0,
+          "other": 4800
+        },
+        "outflows": {
+          "suppliers": 453300,
+          "payroll": 268000,
+          "taxes": 60400,
+          "rent": 80000,
+          "loan_payments": 0,
+          "cash_withdrawals": 20100,
+          "own_transfers": 0,
+          "other": 10100
+        },
+        "average_balance": 311000
+      },
+      {
+        "month": "2025-04",
+        "inflows": {
+          "customers": 1049900,
+          "own_transfers": 0,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 0
+        },
+        "outflows": {
+          "suppliers": 472500,
+          "payroll": 268000,
+          "taxes": 63000,
+          "rent": 80000,
+          "loan_payments": 15270,
+          "cash_withdrawals": 21000,
+          "own_transfers": 0,
+          "other": 10500
+        },
+        "average_balance": 328000
+      },
+      {
+        "month": "2025-05",
+        "inflows": {
+          "customers": 1043700,
+          "own_transfers": 0,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 0
+        },
+        "outflows": {
+          "suppliers": 469700,
+          "payroll": 268000,
+          "taxes": 62600,
+          "rent": 80000,
+          "loan_payments": 15270,
+          "cash_withdrawals": 20900,
+          "own_transfers": 0,
+          "other": 10400
+        },
+        "average_balance": 351000
+      },
+      {
+        "month": "2025-06",
+        "inflows": {
+          "customers": 995800,
+          "own_transfers": 0,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 4800
+        },
+        "outflows": {
+          "suppliers": 448100,
+          "payroll": 268000,
+          "taxes": 59700,
+          "rent": 80000,
+          "loan_payments": 15270,
+          "cash_withdrawals": 19900,
+          "own_transfers": 0,
+          "other": 10000
+        },
+        "average_balance": 362000
+      },
+      {
+        "month": "2025-07",
+        "inflows": {
+          "customers": 978800,
+          "own_transfers": 50000,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 0
+        },
+        "outflows": {
+          "suppliers": 440500,
+          "payroll": 268000,
+          "taxes": 58700,
+          "rent": 80000,
+          "loan_payments": 15270,
+          "cash_withdrawals": 19600,
+          "own_transfers": 0,
+          "other": 9800
+        },
+        "average_balance": 354000
+      },
+      {
+        "month": "2025-08",
+        "inflows": {
+          "customers": 977000,
+          "own_transfers": 0,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 0
+        },
+        "outflows": {
+          "suppliers": 439600,
+          "payroll": 268000,
+          "taxes": 58600,
+          "rent": 80000,
+          "loan_payments": 15270,
+          "cash_withdrawals": 19500,
+          "own_transfers": 0,
+          "other": 9800
+        },
+        "average_balance": 339000
+      },
+      {
+        "month": "2025-09",
+        "inflows": {
+          "customers": 1079900,
+          "own_transfers": 0,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 4800
+        },
+        "outflows": {
+          "suppliers": 486000,
+          "payroll": 268000,
+          "taxes": 64800,
+          "rent": 80000,
+          "loan_payments": 15270,
+          "cash_withdrawals": 21600,
+          "own_transfers": 0,
+          "other": 10800
+        },
+        "average_balance": 334000
+      },
+      {
+        "month": "2025-10",
+        "inflows": {
+          "customers": 1112800,
+          "own_transfers": 0,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 0
+        },
+        "outflows": {
+          "suppliers": 500800,
+          "payroll": 268000,
+          "taxes": 66800,
+          "rent": 80000,
+          "loan_payments": 15270,
+          "cash_withdrawals": 22300,
+          "own_transfers": 0,
+          "other": 11100
+        },
+        "average_balance": 347000
+      },
+      {
+        "month": "2025-11",
+        "inflows": {
+          "customers": 1100700,
+          "own_transfers": 0,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 0
+        },
+        "outflows": {
+          "suppliers": 495300,
+          "payroll": 268000,
+          "taxes": 66000,
+          "rent": 80000,
+          "loan_payments": 15270,
+          "cash_withdrawals": 22000,
+          "own_transfers": 0,
+          "other": 11000
+        },
+        "average_balance": 370000
+      },
+      {
+        "month": "2025-12",
+        "inflows": {
+          "customers": 1165800,
+          "own_transfers": 0,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 4800
+        },
+        "outflows": {
+          "suppliers": 524600,
+          "payroll": 268000,
+          "taxes": 69900,
+          "rent": 80000,
+          "loan_payments": 15270,
+          "cash_withdrawals": 23300,
+          "own_transfers": 0,
+          "other": 11700
+        },
+        "average_balance": 386000
+      },
+      {
+        "month": "2026-01",
+        "inflows": {
+          "customers": 999600,
+          "own_transfers": 0,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 0
+        },
+        "outflows": {
+          "suppliers": 449800,
+          "payroll": 281000,
+          "taxes": 60000,
+          "rent": 80000,
+          "loan_payments": 15270,
+          "cash_withdrawals": 20000,
+          "own_transfers": 0,
+          "other": 10000
+        },
+        "average_balance": 383000
+      },
+      {
+        "month": "2026-02",
+        "inflows": {
+          "customers": 1001400,
+          "own_transfers": 50000,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 0
+        },
+        "outflows": {
+          "suppliers": 450600,
+          "payroll": 281000,
+          "taxes": 60100,
+          "rent": 80000,
+          "loan_payments": 15270,
+          "cash_withdrawals": 20000,
+          "own_transfers": 0,
+          "other": 10000
+        },
+        "average_balance": 368000
+      },
+      {
+        "month": "2026-03",
+        "inflows": {
+          "customers": 1086700,
+          "own_transfers": 0,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 4800
+        },
+        "outflows": {
+          "suppliers": 489000,
+          "payroll": 281000,
+          "taxes": 65200,
+          "rent": 80000,
+          "loan_payments": 15270,
+          "cash_withdrawals": 21700,
+          "own_transfers": 0,
+          "other": 10900
+        },
+        "average_balance": 359000
+      },
+      {
+        "month": "2026-04",
+        "inflows": {
+          "customers": 1077100,
+          "own_transfers": 0,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 0
+        },
+        "outflows": {
+          "suppliers": 484700,
+          "payroll": 281000,
+          "taxes": 64600,
+          "rent": 80000,
+          "loan_payments": 15270,
+          "cash_withdrawals": 21500,
+          "own_transfers": 0,
+          "other": 10800
+        },
+        "average_balance": 367000
+      },
+      {
+        "month": "2026-05",
+        "inflows": {
+          "customers": 1096200,
+          "own_transfers": 0,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 0
+        },
+        "outflows": {
+          "suppliers": 493300,
+          "payroll": 281000,
+          "taxes": 65800,
+          "rent": 80000,
+          "loan_payments": 15270,
+          "cash_withdrawals": 21900,
+          "own_transfers": 0,
+          "other": 11000
+        },
+        "average_balance": 389000
+      },
+      {
+        "month": "2026-06",
+        "inflows": {
+          "customers": 1065000,
+          "own_transfers": 0,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 4800
+        },
+        "outflows": {
+          "suppliers": 479200,
+          "payroll": 281000,
+          "taxes": 63900,
+          "rent": 80000,
+          "loan_payments": 15270,
+          "cash_withdrawals": 21300,
+          "own_transfers": 0,
+          "other": 10600
+        },
+        "average_balance": 408000
+      },
+      {
+        "month": "2026-07",
+        "inflows": {
+          "customers": 997400,
+          "own_transfers": 50000,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 0
+        },
+        "outflows": {
+          "suppliers": 448800,
+          "payroll": 281000,
+          "taxes": 59800,
+          "rent": 80000,
+          "loan_payments": 15270,
+          "cash_withdrawals": 19900,
+          "own_transfers": 0,
+          "other": 10000
+        },
+        "average_balance": 411000
+      },
+      {
+        "month": "2026-08",
+        "inflows": {
+          "customers": 1042200,
+          "own_transfers": 0,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 0
+        },
+        "outflows": {
+          "suppliers": 469000,
+          "payroll": 281000,
+          "taxes": 62500,
+          "rent": 80000,
+          "loan_payments": 15270,
+          "cash_withdrawals": 20800,
+          "own_transfers": 0,
+          "other": 10400
+        },
+        "average_balance": 398000
+      },
+      {
+        "month": "2026-09",
+        "inflows": {
+          "customers": 1136900,
+          "own_transfers": 0,
+          "loans_received": 0,
+          "founder_contributions": 0,
+          "other": 4800
+        },
+        "outflows": {
+          "suppliers": 511600,
+          "payroll": 281000,
+          "taxes": 68200,
+          "rent": 80000,
+          "loan_payments": 15270,
+          "cash_withdrawals": 22700,
+          "own_transfers": 0,
+          "other": 11400
+        },
+        "average_balance": 385000
+      }
+    ],
+    "counterparties_12m": {
+      "customers_count": 38,
+      "suppliers_count": 11,
+      "top_customer_share": 0.18
+    }
+  }
+}

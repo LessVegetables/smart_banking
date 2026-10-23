@@ -1,0 +1,22 @@
+{
+  "history_months": {
+    "value": 4.0,
+    "tier": "THIN"
+  },
+  "revenue_coverage": {
+    "value": 0.158,
+    "tier": "THIN"
+  },
+  "operating_inflow_share": {
+    "value": 0.91,
+    "tier": "FULL"
+  },
+  "regularity_months": {
+    "value": 4.0,
+    "tier": "THIN"
+  },
+  "revenue_basis": "fns",
+  "tier": "THIN",
+  "client_message": "Мы видим только часть оборотов вашего бизнеса: счёт открыт недавно. Чтобы рассчитать лимит, понадобятся выписки из других банков.",
+  "policy_version": "policy_v0"
+}

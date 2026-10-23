@@ -1,0 +1,277 @@
+{
+  "contract_version": "1.0",
+  "application_id": "app-0002",
+  "status": "in_review",
+  "matches_request": false,
+  "route": "underwriter",
+  "route_reasons": [
+    {
+      "code": "route_flag",
+      "staff_text": "Есть флаг: заявленная выручка расходится с подтверждённой",
+      "client_text": "Заявку проверит специалист банка — обычно это занимает до 4 рабочих часов."
+    }
+  ],
+  "reasons": [
+    {
+      "code": "limit_cash_flow",
+      "staff_text": "Лимит на 12 мес. ограничен денежным потоком: CFADS 108 800 ₽, DSCR_min 1.3, текущие платежи 15 270 ₽, P_max 68 422 ₽",
+      "client_text": "Сумма на 12 месяцев ограничена денежным потоком вашего бизнеса: платёж должен оставлять запас на текущие расходы."
+    }
+  ],
+  "stop_factors": [],
+  "flags": [
+    {
+      "code": "declared_revenue_mismatch",
+      "staff_text": "Заявлено 20 000 000 ₽, по ФНС 12 690 000 ₽: расхождение больше 30%",
+      "client_text": "Заявленная выручка отличается от данных налоговой."
+    }
+  ],
+  "score": {
+    "pd": 0.0183,
+    "points": 602.0,
+    "grade": "B",
+    "contributions": [
+      {
+        "feature": "business_age_months",
+        "label": "Возраст бизнеса",
+        "value": 36,
+        "bin_label": "36 мес. и больше",
+        "points": 38.0
+      },
+      {
+        "feature": "inflow_cv_12m",
+        "label": "Волатильность поступлений",
+        "value": 0.049,
+        "bin_label": "меньше 0,15",
+        "points": 40.0
+      },
+      {
+        "feature": "worst_delinquency_days_24m_company",
+        "label": "Худшая просрочка компании за 24 мес.",
+        "value": 0,
+        "bin_label": "нет просрочек",
+        "points": 42.0
+      },
+      {
+        "feature": "bki_inquiries_3m",
+        "label": "Запросы кредитной истории за 3 мес.",
+        "value": 1,
+        "bin_label": "0–1",
+        "points": 34.0
+      },
+      {
+        "feature": "legal_form",
+        "label": "Правовая форма",
+        "value": "ooo",
+        "bin_label": "ООО",
+        "points": 28.0
+      }
+    ],
+    "model_version": "example_v0"
+  },
+  "challenger": null,
+  "data_quality": {
+    "history_months": {
+      "value": 24.0,
+      "tier": "FULL"
+    },
+    "revenue_coverage": {
+      "value": 1.015,
+      "tier": "FULL"
+    },
+    "operating_inflow_share": {
+      "value": 0.991,
+      "tier": "FULL"
+    },
+    "regularity_months": {
+      "value": 12.0,
+      "tier": "FULL"
+    },
+    "revenue_basis": "fns",
+    "tier": "FULL",
+    "client_message": "Мы видим почти все обороты вашего бизнеса — этого достаточно для автоматического решения.",
+    "policy_version": "policy_v0"
+  },
+  "offers": [
+    {
+      "offer_id": "app-0002-longer-term",
+      "kind": "longer_term",
+      "product": "working_capital",
+      "amount": 1000000,
+      "term_months": 18,
+      "rate": 0.2301,
+      "monthly_payment": 66219,
+      "collateral": [
+        "owner_guarantee"
+      ],
+      "guarantee_fee": 0.0,
+      "disbursement": "client_account",
+      "matches_request": false,
+      "tradeoff": "Запрошенная сумма, но срок 18 мес. вместо 12",
+      "limit": {
+        "constraints": [
+          {
+            "name": "cash_flow",
+            "value": 1030000,
+            "inputs": {
+              "median_operating_flow": 136700,
+              "cv": 0.204,
+              "cfads": 108800,
+              "dscr_min": 1.3,
+              "current_payments": 15270,
+              "p_max": 68422,
+              "rate": 0.2301,
+              "term_months": 18
+            },
+            "note": "PV допустимого платежа при ставке и сроке предложения"
+          },
+          {
+            "name": "leverage",
+            "value": 6158600,
+            "inputs": {
+              "annual_revenue": 12690000,
+              "multiplier": 0.5,
+              "current_debt": 186400
+            },
+            "note": null
+          },
+          {
+            "name": "collateral",
+            "value": null,
+            "inputs": {},
+            "note": "Залога нет"
+          },
+          {
+            "name": "turnover",
+            "value": null,
+            "inputs": {},
+            "note": "Только для овердрафта"
+          },
+          {
+            "name": "product_max",
+            "value": 5000000,
+            "inputs": {
+              "product": "working_capital"
+            },
+            "note": null
+          },
+          {
+            "name": "requested",
+            "value": 1000000,
+            "inputs": {},
+            "note": "Запрос — только верхняя граница"
+          }
+        ],
+        "binding": "requested",
+        "limit": 1000000
+      },
+      "price": {
+        "funding": 0.155,
+        "expected_loss": 0.0101,
+        "processing": 0.03,
+        "capital": 0.015,
+        "margin": 0.02,
+        "rate": 0.2301,
+        "pd": 0.0183,
+        "lgd": 0.55,
+        "processing_cost": 25000,
+        "average_balance": 556125
+      },
+      "expected_profit": 16684,
+      "valid_until": "2026-11-03"
+    },
+    {
+      "offer_id": "app-0002-max-amount",
+      "kind": "max_amount",
+      "product": "working_capital",
+      "amount": 710000,
+      "term_months": 12,
+      "rate": 0.2626,
+      "monthly_payment": 67916,
+      "collateral": [
+        "owner_guarantee"
+      ],
+      "guarantee_fee": 0.0,
+      "disbursement": "client_account",
+      "matches_request": false,
+      "tradeoff": "Запрошенный срок 12 мес., сумма до 710 000 ₽",
+      "limit": {
+        "constraints": [
+          {
+            "name": "cash_flow",
+            "value": 710000,
+            "inputs": {
+              "median_operating_flow": 136700,
+              "cv": 0.204,
+              "cfads": 108800,
+              "dscr_min": 1.3,
+              "current_payments": 15270,
+              "p_max": 68422,
+              "rate": 0.2626,
+              "term_months": 12
+            },
+            "note": "PV допустимого платежа при ставке и сроке предложения"
+          },
+          {
+            "name": "leverage",
+            "value": 6158600,
+            "inputs": {
+              "annual_revenue": 12690000,
+              "multiplier": 0.5,
+              "current_debt": 186400
+            },
+            "note": null
+          },
+          {
+            "name": "collateral",
+            "value": null,
+            "inputs": {},
+            "note": "Залога нет"
+          },
+          {
+            "name": "turnover",
+            "value": null,
+            "inputs": {},
+            "note": "Только для овердрафта"
+          },
+          {
+            "name": "product_max",
+            "value": 5000000,
+            "inputs": {
+              "product": "working_capital"
+            },
+            "note": null
+          },
+          {
+            "name": "requested",
+            "value": 1000000,
+            "inputs": {},
+            "note": "Запрос — только верхняя граница"
+          }
+        ],
+        "binding": "cash_flow",
+        "limit": 710000
+      },
+      "price": {
+        "funding": 0.155,
+        "expected_loss": 0.0101,
+        "processing": 0.0625,
+        "capital": 0.015,
+        "margin": 0.02,
+        "rate": 0.2626,
+        "pd": 0.0183,
+        "lgd": 0.55,
+        "processing_cost": 25000,
+        "average_balance": 399829
+      },
+      "expected_profit": 7997,
+      "valid_until": "2026-11-03"
+    }
+  ],
+  "counterfactuals": [],
+  "requested_documents": [],
+  "reapply_after": null,
+  "model_version": "example_v0",
+  "policy_version": "policy_v0",
+  "decided_at": "2026-10-24T10:16:05+03:00"
+}

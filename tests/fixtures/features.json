@@ -1,0 +1,23 @@
+{
+  "feature_set_version": "features_v0",
+  "inflow_trend_12m": -0.008,
+  "inflow_cv_12m": 0.049,
+  "months_without_inflows_12m": 0,
+  "customers_count_12m": 38,
+  "top_customer_share": 0.18,
+  "cash_withdrawal_share": 0.023,
+  "balance_days_of_expenses": 12.0,
+  "tax_payment_months_12m": 12,
+  "payroll_payment_months_12m": 12,
+  "worst_delinquency_days_24m_company": 0,
+  "worst_delinquency_days_24m_owner": 0,
+  "bki_inquiries_3m": 1,
+  "debt_to_revenue": 0.015,
+  "limit_utilization": 0.267,
+  "business_age_months": 36,
+  "okved_risk_group": "low",
+  "legal_form": "ooo",
+  "owner_or_director_changed_6m": false,
+  "margin": 0.072,
+  "negative_equity": false
+}

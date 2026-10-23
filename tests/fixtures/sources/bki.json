@@ -1,0 +1,64 @@
+{
+  "inn": "5406000001",
+  "status": "ok",
+  "requested_at": "2026-10-24T10:15:00+03:00",
+  "received_at": "2026-10-24T10:15:02.450000+03:00",
+  "latency_ms": 2450,
+  "attempts": 1,
+  "error": null,
+  "source": "bki",
+  "payload": {
+    "reports": [
+      {
+        "subject": "company",
+        "subject_inn": "5406000001",
+        "loans": [
+          {
+            "loan_id": "bki-loan-001",
+            "kind": "loan",
+            "opened_at": "2025-03-01",
+            "closed_at": null,
+            "amount": 300000,
+            "balance": 186400,
+            "monthly_payment": 15270,
+            "current_overdue_days": 0,
+            "current_overdue_amount": 0,
+            "delinquencies": []
+          }
+        ],
+        "inquiries": [
+          {
+            "inquired_at": "2026-10-20",
+            "lender_type": "bank"
+          }
+        ]
+      },
+      {
+        "subject": "owner",
+        "subject_inn": "540600000001",
+        "loans": [
+          {
+            "loan_id": "bki-loan-002",
+            "kind": "card",
+            "opened_at": "2021-06-10",
+            "closed_at": null,
+            "amount": 150000,
+            "balance": 40000,
+            "monthly_payment": 4000,
+            "current_overdue_days": 0,
+            "current_overdue_amount": 0,
+            "delinquencies": [
+              {
+                "started_at": "2025-08-05",
+                "days": 3,
+                "amount": 4000,
+                "payment_due": 4000
+              }
+            ]
+          }
+        ],
+        "inquiries": []
+      }
+    ]
+  }
+}

@@ -20,6 +20,7 @@ What we build and why: [SPEC.md](SPEC.md) (in Russian). Contracts between tracks
 | 2026-10-24 | Docs are written in Russian. This file, file names, identifiers and code are in English. |
 | 2026-10-24 | Being a bank client ≠ having reliable data. Account data gets a quality tier (`FULL` / `PARTIAL` / `THIN`, SPEC §5.1) that drives limit, routing and pre-approval. |
 | 2026-10-24 | The "news feed" line on page 7 of the case PDF is an organizer copy-paste error. Ignore it. |
+| 2026-10-24 | Contracts v1.0 (T00): money in whole rubles, rates/shares/PD/LGD as fractions, `null` = no data. The client's request (`ApplicationRequest`) is a contract too. Thresholds stay in `config/`. |
 
 ## Open questions
 
@@ -49,7 +50,7 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 
 | ID | Task | Size | Depends on | Status | Owner / PR |
 |---|---|---|---|---|---|
-| T00 | Contracts: Pydantic models in `apps/api/contracts.py` + example JSON per source in `tests/fixtures/` (source payloads, `Fact`, `DataQuality`, features, engine output) | S | — | todo | |
+| T00 | Contracts: Pydantic models in `apps/api/contracts.py` + example JSON per source in `tests/fixtures/` (source payloads, `Fact`, `DataQuality`, features, engine output) | S | — | review | branch `t00-contracts` |
 
 ### Track 1 — World & sources
 

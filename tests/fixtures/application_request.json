@@ -1,0 +1,30 @@
+{
+  "application_id": "app-0001",
+  "inn": "5406000001",
+  "legal_form": "ooo",
+  "purpose": "inventory",
+  "amount": 1000000,
+  "term_months": 12,
+  "needed_by": "month",
+  "preferred_product": "working_capital",
+  "declared_annual_revenue": 12500000,
+  "equipment": null,
+  "consents": [
+    {
+      "kind": "bki_company",
+      "subject_inn": "5406000001",
+      "given_at": "2026-10-24T10:14:30+03:00"
+    },
+    {
+      "kind": "bki_owner",
+      "subject_inn": "540600000001",
+      "given_at": "2026-10-24T10:14:30+03:00"
+    },
+    {
+      "kind": "personal_data",
+      "subject_inn": "540600000001",
+      "given_at": "2026-10-24T10:14:30+03:00"
+    }
+  ],
+  "submitted_at": "2026-10-24T10:14:55+03:00"
+}
