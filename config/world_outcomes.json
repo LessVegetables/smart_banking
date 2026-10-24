@@ -1,0 +1,21 @@
+{
+  "version": "world-outcomes-v1",
+  "target_default_rate": 0.065,
+  "quality_slope": -1.1,
+  "shell_default_probability": 0.7,
+  "holdout_share": 0.3,
+  "industry_default_offsets": {
+    "bakery": 0.0,
+    "retail_food": 0.1,
+    "wholesale": 0.0,
+    "construction": 0.4,
+    "transport": 0.3,
+    "restaurants": 0.5,
+    "beauty": 0.2,
+    "it": -0.2,
+    "agriculture": 0.2,
+    "auto_repair": 0.1,
+    "manufacturing": -0.1,
+    "tourism": 0.4
+  }
+}
