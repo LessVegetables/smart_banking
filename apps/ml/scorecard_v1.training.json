@@ -1,0 +1,186 @@
+{
+  "scorecard_version": "scorecard_v1",
+  "feature_set_version": "features_v0",
+  "world": {
+    "generator_version": "world-t06-1",
+    "seed": 42,
+    "n": 5000,
+    "as_of": "2026-10-01",
+    "outcomes_version": "world-outcomes-v1"
+  },
+  "companies": 3492,
+  "defaults": 234,
+  "settings": {
+    "min_iv": 0.02,
+    "min_z": 2.0,
+    "ridge": 0.001,
+    "fine_classes": 20,
+    "min_bin_share": 0.05,
+    "min_bin_bads": 10,
+    "max_bins": 5,
+    "smoothing": 0.5
+  },
+  "features": [
+    {
+      "name": "inflow_trend_12m",
+      "iv": 0.0276,
+      "selected": false,
+      "coefficient": null,
+      "z": null,
+      "dropped": "wrong_sign"
+    },
+    {
+      "name": "inflow_cv_12m",
+      "iv": 0.5309,
+      "selected": true,
+      "coefficient": 0.5943,
+      "z": 5.26,
+      "dropped": null
+    },
+    {
+      "name": "months_without_inflows_12m",
+      "iv": 0.0717,
+      "selected": false,
+      "coefficient": null,
+      "z": null,
+      "dropped": "wrong_sign"
+    },
+    {
+      "name": "customers_count_12m",
+      "iv": 0.0768,
+      "selected": false,
+      "coefficient": null,
+      "z": null,
+      "dropped": "wrong_sign"
+    },
+    {
+      "name": "top_customer_share",
+      "iv": 0.1337,
+      "selected": false,
+      "coefficient": null,
+      "z": null,
+      "dropped": "wrong_sign"
+    },
+    {
+      "name": "cash_withdrawal_share",
+      "iv": 0.1364,
+      "selected": true,
+      "coefficient": 0.7205,
+      "z": 3.62,
+      "dropped": null
+    },
+    {
+      "name": "balance_days_of_expenses",
+      "iv": 0.6066,
+      "selected": true,
+      "coefficient": 0.7564,
+      "z": 6.69,
+      "dropped": null
+    },
+    {
+      "name": "tax_payment_months_12m",
+      "iv": 0.0607,
+      "selected": false,
+      "coefficient": null,
+      "z": null,
+      "dropped": "wrong_sign"
+    },
+    {
+      "name": "payroll_payment_months_12m",
+      "iv": 0.2265,
+      "selected": true,
+      "coefficient": 0.4861,
+      "z": 2.83,
+      "dropped": null
+    },
+    {
+      "name": "worst_delinquency_days_24m_company",
+      "iv": 0.0573,
+      "selected": true,
+      "coefficient": 0.5035,
+      "z": 2.0,
+      "dropped": null
+    },
+    {
+      "name": "worst_delinquency_days_24m_owner",
+      "iv": 0.0659,
+      "selected": false,
+      "coefficient": null,
+      "z": null,
+      "dropped": "wrong_sign"
+    },
+    {
+      "name": "bki_inquiries_3m",
+      "iv": 0.1115,
+      "selected": false,
+      "coefficient": null,
+      "z": null,
+      "dropped": "not_significant"
+    },
+    {
+      "name": "debt_to_revenue",
+      "iv": 0.0914,
+      "selected": false,
+      "coefficient": null,
+      "z": null,
+      "dropped": "wrong_sign"
+    },
+    {
+      "name": "limit_utilization",
+      "iv": 0.2387,
+      "selected": true,
+      "coefficient": 0.497,
+      "z": 3.36,
+      "dropped": null
+    },
+    {
+      "name": "business_age_months",
+      "iv": 0.1531,
+      "selected": true,
+      "coefficient": 0.5485,
+      "z": 2.89,
+      "dropped": null
+    },
+    {
+      "name": "okved_risk_group",
+      "iv": 0.0096,
+      "selected": false,
+      "coefficient": null,
+      "z": null,
+      "dropped": "low_iv"
+    },
+    {
+      "name": "legal_form",
+      "iv": 0.0129,
+      "selected": false,
+      "coefficient": null,
+      "z": null,
+      "dropped": "low_iv"
+    },
+    {
+      "name": "owner_or_director_changed_6m",
+      "iv": 0.0,
+      "selected": false,
+      "coefficient": null,
+      "z": null,
+      "dropped": "low_iv"
+    },
+    {
+      "name": "margin",
+      "iv": 0.2673,
+      "selected": true,
+      "coefficient": 0.3744,
+      "z": 2.37,
+      "dropped": null
+    },
+    {
+      "name": "negative_equity",
+      "iv": 0.0005,
+      "selected": false,
+      "coefficient": null,
+      "z": null,
+      "dropped": "low_iv"
+    }
+  ],
+  "gini_train": 0.563
+}

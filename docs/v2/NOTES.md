@@ -20,20 +20,17 @@ Everything one task leaves for another lives here, filed under the task that has
 - Revenue coverage: divide by `fns_revenue(fns, egrul, accounts).annualized` (`apps/api/features/revenue.py`), not by the raw ФНС figure, which is only part of a year for companies registered during it. The account features need 6+ months (`accounts.py`, `MIN_MONTHS`); keep the history metric consistent with that. (from T08)
 - Sanity check: with SPEC §5.1 thresholds, regular companies come out at about 75% `FULL`, 18% `PARTIAL`, 7% `THIN` (seed 7, 3000 companies). `THIN` is mostly young companies. (from T02, `apps/world/README.md`)
 
-## T10 — scorecard training
-
-- Features: `extract_features(SourcePayloads.from_company(company), world.meta.as_of)` from `apps/api/features`, the same call the live engine makes. `feature_set_version` is the version of `config/features.json`; record it with the scorecard and retrain when it changes. (from T08)
-- Every company in the world has an outcome, as if the bank had lent to all of them. Real banks only know outcomes of issued loans (reject inference). Decide which companies go into training and say so in the docs. (from T05)
-- The train/holdout split isn't stratified by outcome: default rates differ by chance (9.9% vs 7.2%, seed 7, 3000 companies). Stratify at training time if needed; the world doesn't have to change. (from T05)
-
 ## T11 — validation metrics
 
 - Holdout is a random split on one snapshot, not out-of-time; list this as a limitation on the validation page. (from T05)
+- Score with `apps/ml/scorecard_v1.json` and `total_points` / `gini` from `apps/ml/score.py`; features of holdout companies via `extract_features(SourcePayloads.from_company(c), world.meta.as_of)` on the default world (seed 42, 5000). Expect holdout Gini ≈ 0.46 against a true-PD ceiling of 0.61. (from T10, `apps/ml/README.md`)
+- The card is calibrated to the training sample's default rate (6.7%); the holdout has 7.4%, so predicted PD in grades A–C runs below the actual rate. Show it on the calibration chart rather than recalibrating. (from T10)
 
 ## T12 — demo personas
 
 - Few young companies: about 4% are under 6 months, 13% under a year. If personas need more, shift the age distribution in `_company` (`apps/world/`) or add a young-company group. (from T04)
 - Every archetype has candidates among both ИП and ООО; the shell archetype is ООО only. (from T04)
+- Expected grades come from `apps/ml/scorecard_v1.json`. Retraining it (any change to `config/features.json`, `config/world_outcomes.json` or the world) moves persona grades, so the expected-outcomes table must be regenerated with it. (from T10)
 - Per-persona source failures (e.g. ФССП down) go in `MOCK_SOURCES_SCENARIOS`; the world doesn't change. For sampling without latency use `payload(company, source)`. (from T06/T07, `apps/sources/README.md`)
 
 ## T13 — fact store
@@ -46,6 +43,11 @@ Everything one task leaves for another lives here, filed under the task that has
 - Overdue stop factors: use `subject_history(report, as_of, default_policy().overdue)` from `apps/api/features/credit.py` per report: `worst_days_24m >= 90` and `current_overdue_days > 30` already exclude technical delays and small amounts. "3+ inquiries in 30 days": `inquiries_since(bki, as_of - 30 days)`. (from T08)
 - "3+ credit inquiries in 30 days" must count other banks' inquiries only; our application leaves no inquiry in the report. (from T06)
 - `Enrichment.degraded` lists optional sources that didn't answer (ФНС, ФССП, арбитраж): each needs the "source unavailable" flag and a penalty. (from T07)
+
+## T15 — scoring adapter
+
+- The trained card is `apps/ml/scorecard_v1.json`. Read bins as `apps/ml/score.py` does (`find_bin`): numeric `[lower, upper)`, categorical by membership, `None` → the missing bin; a missing bin with `woe: null` has 0 points (average risk). Simplest is to import `find_bin` / `total_points` from `apps.ml`: the package imports only the contracts. (from T10)
+- The `Scorecard` contract has no `feature_set_version`; it is in `apps/ml/scorecard_v1.training.json`. Refuse to score when it differs from `Features.feature_set_version`. Proposed: a shared-folder PR adding `feature_set_version` to `Scorecard`. (from T10)
 
 ## T19 — state machine
 
@@ -67,6 +69,7 @@ Everything one task leaves for another lives here, filed under the task that has
 
 ## T34 — Docker
 
+- The Dockerfile copies only `apps/api` and `config`: add `apps/ml/` so the scoring adapter (T15) finds `scorecard_v1.json`, its training passport and `apps.ml.score` in the image. `apps.ml.train` needs `apps/world/`, but nothing imports it at runtime. (from T10)
 - `MOCK_SOURCES_*` and `WORLD_*` are in `.env.example`. So the API doesn't rebuild the world on every start, write it to `apps/world/out` when building the image. (from T07)
 
 ## Unassigned

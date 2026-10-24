@@ -1,0 +1,461 @@
+{
+  "version": "scorecard_v1",
+  "origin": "trained",
+  "created_at": "2026-10-24",
+  "description": "Логистическая регрессия на WoE, обучена на синтетическом мире (зерно 42, 5000 компаний, срез 2026-10-01): 3492 компаний обучающей выборки, 234 дефолтов. Набор признаков features_v0.",
+  "scaling": {
+    "base_points": 600.0,
+    "base_odds": 50.0,
+    "pdo": 20.0
+  },
+  "intercept_points": 564.4,
+  "features": [
+    {
+      "name": "inflow_cv_12m",
+      "label": "Волатильность поступлений",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "меньше 0,142",
+          "lower": null,
+          "upper": 0.142,
+          "categories": null,
+          "missing": false,
+          "woe": 1.1185,
+          "points": 19.2
+        },
+        {
+          "label": "0,142–0,174",
+          "lower": 0.142,
+          "upper": 0.174,
+          "categories": null,
+          "missing": false,
+          "woe": 0.0744,
+          "points": 1.3
+        },
+        {
+          "label": "0,174–0,348",
+          "lower": 0.174,
+          "upper": 0.348,
+          "categories": null,
+          "missing": false,
+          "woe": -0.1328,
+          "points": -2.3
+        },
+        {
+          "label": "0,348–0,415",
+          "lower": 0.348,
+          "upper": 0.415,
+          "categories": null,
+          "missing": false,
+          "woe": -0.8434,
+          "points": -14.5
+        },
+        {
+          "label": "0,415 и больше",
+          "lower": 0.415,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": -1.1077,
+          "points": -19.0
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": -0.2106,
+          "points": -3.6
+        }
+      ]
+    },
+    {
+      "name": "cash_withdrawal_share",
+      "label": "Доля снятия наличных",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "меньше 0,012",
+          "lower": null,
+          "upper": 0.012,
+          "categories": null,
+          "missing": false,
+          "woe": 0.1896,
+          "points": 3.9
+        },
+        {
+          "label": "0,012–0,016",
+          "lower": 0.012,
+          "upper": 0.016,
+          "categories": null,
+          "missing": false,
+          "woe": 0.182,
+          "points": 3.8
+        },
+        {
+          "label": "0,016–0,098",
+          "lower": 0.016,
+          "upper": 0.098,
+          "categories": null,
+          "missing": false,
+          "woe": 0.0623,
+          "points": 1.3
+        },
+        {
+          "label": "0,098–0,152",
+          "lower": 0.098,
+          "upper": 0.152,
+          "categories": null,
+          "missing": false,
+          "woe": -0.0467,
+          "points": -1.0
+        },
+        {
+          "label": "0,152 и больше",
+          "lower": 0.152,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": -1.2112,
+          "points": -25.2
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": -0.2106,
+          "points": -4.4
+        }
+      ]
+    },
+    {
+      "name": "balance_days_of_expenses",
+      "label": "Средний остаток, дней расходов",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "меньше 7,7",
+          "lower": null,
+          "upper": 7.7,
+          "categories": null,
+          "missing": false,
+          "woe": -0.8593,
+          "points": -18.8
+        },
+        {
+          "label": "7,7–8,5",
+          "lower": 7.7,
+          "upper": 8.5,
+          "categories": null,
+          "missing": false,
+          "woe": -0.4899,
+          "points": -10.7
+        },
+        {
+          "label": "8,5–10,1",
+          "lower": 8.5,
+          "upper": 10.1,
+          "categories": null,
+          "missing": false,
+          "woe": -0.0564,
+          "points": -1.2
+        },
+        {
+          "label": "10,1–17,2",
+          "lower": 10.1,
+          "upper": 17.2,
+          "categories": null,
+          "missing": false,
+          "woe": 0.4881,
+          "points": 10.7
+        },
+        {
+          "label": "17,2 и больше",
+          "lower": 17.2,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": 1.3212,
+          "points": 28.8
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": -0.2106,
+          "points": -4.6
+        }
+      ]
+    },
+    {
+      "name": "payroll_payment_months_12m",
+      "label": "Месяцев с выплатой зарплаты",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "10 и меньше",
+          "lower": null,
+          "upper": 11.0,
+          "categories": null,
+          "missing": false,
+          "woe": -0.4839,
+          "points": -6.8
+        },
+        {
+          "label": "11",
+          "lower": 11.0,
+          "upper": 12.0,
+          "categories": null,
+          "missing": false,
+          "woe": -0.3813,
+          "points": -5.3
+        },
+        {
+          "label": "12 и больше",
+          "lower": 12.0,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": 0.5278,
+          "points": 7.4
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": -0.2106,
+          "points": -3.0
+        }
+      ]
+    },
+    {
+      "name": "worst_delinquency_days_24m_company",
+      "label": "Худшая просрочка компании, дней",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "61 и меньше",
+          "lower": null,
+          "upper": 62.0,
+          "categories": null,
+          "missing": false,
+          "woe": -0.117,
+          "points": -1.7
+        },
+        {
+          "label": "62 и больше",
+          "lower": 62.0,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": -1.5017,
+          "points": -21.8
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": 0.0801,
+          "points": 1.2
+        }
+      ]
+    },
+    {
+      "name": "limit_utilization",
+      "label": "Использование лимитов",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "меньше 0,211",
+          "lower": null,
+          "upper": 0.211,
+          "categories": null,
+          "missing": false,
+          "woe": 0.8401,
+          "points": 12.0
+        },
+        {
+          "label": "0,211–0,312",
+          "lower": 0.211,
+          "upper": 0.312,
+          "categories": null,
+          "missing": false,
+          "woe": 0.1675,
+          "points": 2.4
+        },
+        {
+          "label": "0,312–0,542",
+          "lower": 0.312,
+          "upper": 0.542,
+          "categories": null,
+          "missing": false,
+          "woe": -0.1045,
+          "points": -1.5
+        },
+        {
+          "label": "0,542–0,786",
+          "lower": 0.542,
+          "upper": 0.786,
+          "categories": null,
+          "missing": false,
+          "woe": -0.6829,
+          "points": -9.8
+        },
+        {
+          "label": "0,786 и больше",
+          "lower": 0.786,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": -1.1535,
+          "points": -16.5
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": 0.148,
+          "points": 2.1
+        }
+      ]
+    },
+    {
+      "name": "business_age_months",
+      "label": "Возраст бизнеса, мес.",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "14 и меньше",
+          "lower": null,
+          "upper": 15.0,
+          "categories": null,
+          "missing": false,
+          "woe": -0.5337,
+          "points": -8.4
+        },
+        {
+          "label": "15–29",
+          "lower": 15.0,
+          "upper": 30.0,
+          "categories": null,
+          "missing": false,
+          "woe": -0.2382,
+          "points": -3.8
+        },
+        {
+          "label": "30–62",
+          "lower": 30.0,
+          "upper": 63.0,
+          "categories": null,
+          "missing": false,
+          "woe": 0.1275,
+          "points": 2.0
+        },
+        {
+          "label": "63–86",
+          "lower": 63.0,
+          "upper": 87.0,
+          "categories": null,
+          "missing": false,
+          "woe": 0.4342,
+          "points": 6.9
+        },
+        {
+          "label": "87 и больше",
+          "lower": 87.0,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": 0.5122,
+          "points": 8.1
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": null,
+          "points": 0.0
+        }
+      ]
+    },
+    {
+      "name": "margin",
+      "label": "Маржинальность",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "меньше 0,008",
+          "lower": null,
+          "upper": 0.008,
+          "categories": null,
+          "missing": false,
+          "woe": -0.9291,
+          "points": -10.0
+        },
+        {
+          "label": "0,008–0,056",
+          "lower": 0.008,
+          "upper": 0.056,
+          "categories": null,
+          "missing": false,
+          "woe": 0.1088,
+          "points": 1.2
+        },
+        {
+          "label": "0,056 и больше",
+          "lower": 0.056,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": 1.0036,
+          "points": 10.8
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": 0.0184,
+          "points": 0.2
+        }
+      ]
+    }
+  ],
+  "grades": [
+    {
+      "grade": "A",
+      "pd_max": 0.015
+    },
+    {
+      "grade": "B",
+      "pd_max": 0.03
+    },
+    {
+      "grade": "C",
+      "pd_max": 0.06
+    },
+    {
+      "grade": "D",
+      "pd_max": 0.12
+    },
+    {
+      "grade": "E",
+      "pd_max": null
+    }
+  ]
+}
