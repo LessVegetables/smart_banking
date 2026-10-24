@@ -98,6 +98,7 @@ Everything one task leaves for another lives here, filed under the task that has
 
 - The simplification registry should take the T21 list from `apps/api/DISBURSEMENT.md`, «Упрощения»: code shown on screen instead of SMS, one code signs the guarantee too, mock pledge registry / supplier invoice / МСП guarantee, payout without real postings. (from T21)
 - Simplification registry: statement upload has no recognition (`# MOCK:`, the file is already parsed JSON), transfers between our account and the other bank aren't netted, the statement's authenticity isn't checked, check thresholds are code constants (`apps/api/STATEMENTS.md`, «Упрощения»). (from T23)
+- Simplification registry: the LLM assistant's timeout (30 s) and answer limit (500 tokens) are code constants in `apps/api/assistant.py`; tests check the request format and the template fallback, never a live model (`README.md`, «Языковая модель»). (from T24)
 
 ## T36 — policy simulator
 
