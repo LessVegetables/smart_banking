@@ -28,13 +28,6 @@ Everything one task leaves for another lives here, filed under the task that has
 - T14 emits `source_unavailable_fns`, `source_unavailable_fssp` and `source_unavailable_arbitration` flags. Apply a score penalty for each degraded source after the econ team defines penalty values; no such values exist in the current policy. (`apps/api/stop_factors.py`)
   - Not handled in T15: the values belong in `config/` (shared-folder PR, econ team). Then apply them in `Scorer.score` (`apps/api/scoring.py`) and show each penalty as its own row in `ScoreResult.contributions`, so points still add up. (T15)
 
-## T18 — routing
-
-- Pricing needs the route of each offer's amount: the processing cost in `quote(route=...)` (`apps/api/limits.py`) is 3k / 25k / 60k ₽ by route. Expose routing of a given amount (grade, flags, tier, amount) so T19 can pass it to `generate_offers(..., route_for=...)` (`apps/api/offers.py`) as `amount -> Route`. (from T16, T17)
-- Grade comes from the same `ScoreResult` as T16 (`apps/api/scoring.py`); the challenger's grade must not affect the route. (from T15)
-- Route on `DataQuality.tier` from the same call as T16 (`apps/api/features/data_quality.py`); the reason to show is in `client_message`, and each metric's tier tells the underwriter which one failed. (from T09)
-- Every flag returned by T14 requires staff review under SPEC §7; preserve its reason code and staff/client wording in route reasons. (`apps/api/stop_factors.py`)
-
 ## T19 — state machine
 
 - After scoring, call `cash_flow_from_responses(enrichment.responses, data_quality)` (`apps/api/limits.py`) once and pass it to `generate_offers(request, cash_flow, score, route_for, as_of)` (`apps/api/offers.py`, `apps/api/OFFERS.md`). It raises `ValueError` without БКИ, which can't happen after the "source unavailable" route. `Decision.policy_version` is one string, but there are now three policy versions (`credit_policy_v0`, `DataQuality.policy_version`, the feature set): decide how to combine them, or propose a contract field. (from T16)
@@ -44,6 +37,12 @@ Everything one task leaves for another lives here, filed under the task that has
 - Features need an `as_of`: `features_from_responses` takes the day the sources answered. The mock world is frozen at `WORLD_AS_OF` (default 2026-10-01), so the further today is from it, the more business age, episode ages and the 3-month inquiry window drift from the world's data. Decide which date the demo pipeline passes (probably the world's `as_of`). (from T08)
 - Stage 3 ends with the data-quality tier: call `data_quality_from_responses(enrichment.responses, request.declared_annual_revenue)` right after `enrich` and store it with the application. (from T09)
 - `company_not_found` → the application can't be processed; enrichment not complete (`unavailable_required`) → underwriter queue with reason "source unavailable"; otherwise → stop-factors and scoring. (from T07, `apps/sources/README.md`)
+- Route with `route_application(request.amount, grade=..., flags=..., data_quality=..., stop_factors=..., unavailable_sources=enrichment.unavailable_required)` (`apps/api/routing.py`, `apps/api/ROUTING.md`) → `Decision.route`, `route_reasons`; pass `route_for(grade, flags, data_quality)` to `generate_offers`. On `FeatureSetMismatch` pass `grade=None` (→ underwriter, `route_score_unavailable`). (from T18)
+- `THIN` routes to the underwriter (`route_data_thin`), but SPEC §5.1/§6 asks for data first: status `needs_data` with `requested_documents` (other banks' statements, reports) once T23 exists, otherwise `in_review` (cut list item 5). (from T18)
+
+## T20 — staff actions
+
+- An underwriter approves only within their authority (SPEC §11): re-route every staff-changed offer with `route_application(new_amount, ...)` (`apps/api/routing.py`) and require the committee's two signatures when it returns `committee` (e.g. above 15M ₽, or grade D/E above 5M ₽). (from T18)
 
 ## T22 — overdraft pre-approval
 
@@ -71,12 +70,14 @@ Everything one task leaves for another lives here, filed under the task that has
 ## T28 — offer menu
 
 - `Offer.tradeoff` and `Counterfactual.client_text` are ready to show; `reasons[].client_text` names the binding limit. For `THIN` there's no cash-flow counterfactual (no cash-flow limit at all): show `DataQuality.client_message` as the "how to get more" hint. `rate_above_cap` / `limit_below_product_minimum` reasons explain a decline, `reapply_after` says when to come back. (from T17, `apps/api/OFFERS.md`)
+- Several `route_reasons` can carry the same `client_text` ("Заявку проверит специалист банка…"): show distinct texts once. Data-quality route reasons carry `DataQuality.client_message`. (from T18, `apps/api/ROUTING.md`)
 
 ## T30 — staff dossier
 
 - `ScoreResult.contributions` has one row per card feature but not the base points: show `points - sum(contributions)` as «базовые баллы». The challenger (`Decision.challenger`) is for staff only, labelled as a shadow model that didn't affect the decision. (from T15)
 - Limit breakdown: every `LimitConstraint` carries its `inputs` and `note`; the `leverage` note says when the revenue came from our account because ФНС has none. `PriceBreakdown` components add up to the rate. (from T16, `apps/api/LIMITS.md`)
 - Our own БКИ request doesn't appear in the report. If the dossier should show it, ask track 1 to add it in the БКИ adapter (`apps/sources/`). (from T06)
+- "Почему заявка пришла сюда" is `Decision.route_reasons[].staff_text`, one row per condition; the code says which matrix row fired (`apps/api/ROUTING.md`). `Decision` doesn't store each reason's own route (`Routing.routes` does): derive it from the code table if the dossier needs it. (from T18)
 
 ## T32 — risk-manager page
 
@@ -98,6 +99,7 @@ Everything one task leaves for another lives here, filed under the task that has
 ## T36 — policy simulator
 
 - Pass a changed `CreditPolicy` (`load_policy(path)` or `default_policy().model_copy(...)`, `apps/api/credit_policy.py`) into `quote` / `limit_breakdown`; nothing in T16 reads global state besides the default policy. (from T16)
+- Routing thresholds are `RoutingPolicy` (`apps/api/routing.py`): pass a changed one to `route_application` / `route_for`, e.g. to see how the auto-decision share moves with the 5M ₽ bound. (from T18)
 
 ## Unassigned
 
@@ -107,3 +109,4 @@ Everything one task leaves for another lives here, filed under the task that has
 - Offer policy is hard-coded in `apps/api/offers.py` as `# SIMPLIFICATION:` constants: `MAX_OFFERS = 3`, `OFFER_VALID_DAYS = 10`, `REAPPLY_AFTER_DAYS = 90`, `CREDIT_LINE_UNUSED_FEE = 0.01`, `PURPOSE_PRODUCT`. Proposed: a shared-folder PR adding an `offers` block to `config/credit_policy.json` and `CreditPolicy` (econ team owns the values), then read them from the policy. (from T17)
 - `decision_offered.json` has the "without the current loan" counterfactual at 890k with `resulting_rate: null`; the engine gives 900k at 20.61%. Optional shared-folder PR to bring the fixture and `CONTRACTS.md` in line with `generate_offers`. (from T17)
 - Reapply date after an economic decline is the same 90 days for every reason. Per-reason dates (THIN: when history reaches the `FULL` bound; leverage: when the loan closes) need policy values from the econ team. (from T17)
+- The SPEC §11 authority matrix is hard-coded in `apps/api/routing.py` as the `# SIMPLIFICATION:` `RoutingPolicy` defaults (auto up to 5M ₽ `FULL` / 1M ₽ `PARTIAL`, underwriter up to 15M ₽, auto grades A–C, committee for D/E above 5M ₽). Proposed: a shared-folder PR adding a `routing` block to `config/credit_policy.json` and `CreditPolicy` (econ team owns the values; also confirm grade E = D), then build `RoutingPolicy` from it. (from T18)
