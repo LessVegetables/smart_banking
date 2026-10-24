@@ -26,7 +26,7 @@ from .worker import loop, event, save_decision
 from .storage import storage
 from .assistant import explain
 from .contracts import CollateralType, ProductId
-from . import staff_actions, workflow
+from . import disbursement, staff_actions, workflow
 
 DEMO=os.environ.get('DEMO_MODE','true').lower()=='true'
 COOKIE_SECURE=os.environ.get('COOKIE_SECURE','false').lower()=='true'
@@ -369,7 +369,7 @@ def application_events_v2(id:str,user=Depends(staff),db=Depends(db_session)):
 @app.post('/api/v2/applications/{id}/accept')
 def accept_v2(id:str,body:V2Accept,user=Depends(current_user),db=Depends(db_session)):
     a=client_v2(db,id,user,body.revision)
-    try:workflow.accept(db,a,body.offer_id,actor=workflow.actor_of(user))
+    try:disbursement.accept(db,a,body.offer_id,actor=workflow.actor_of(user))
     except workflow.IllegalTransition as e:raise HTTPException(409,str(e))
     except LookupError as e:raise HTTPException(422,str(e))
     db.flush()
@@ -383,6 +383,36 @@ def withdraw_v2(id:str,body:V2Revision,user=Depends(current_user),db=Depends(db_
     try:workflow.withdraw(db,a,actor=workflow.actor_of(user))
     except workflow.IllegalTransition as e:raise HTTPException(409,str(e))
     db.flush();return workflow.application_json(db,a,staff=False)
+
+# --- v2 documents, signing and disbursement (T21, DISBURSEMENT.md); conditions run in the worker ---
+class V2SignCode(V2Revision):code:str=Field(min_length=1,max_length=20)
+
+@app.get('/api/v2/applications/{id}/documents/{doc_id}')
+def document_v2(id:str,doc_id:str,user=Depends(current_user),db=Depends(db_session)):
+    a=own_v2(db,id,user)
+    doc=next((d for d in (a.closing or {}).get('documents',[]) if d['doc_id']==doc_id),None)
+    if not doc:raise HTTPException(404,'Документ не найден')
+    return doc
+
+@app.post('/api/v2/applications/{id}/sign/code')
+def sign_code_v2(id:str,body:V2Revision,user=Depends(current_user),db=Depends(db_session)):
+    a=client_v2(db,id,user,body.revision)
+    try:code=disbursement.issue_code(db,a,actor=workflow.actor_of(user))
+    except workflow.IllegalTransition as e:raise HTTPException(409,str(e))
+    except disbursement.SigningError as e:raise HTTPException(422,str(e))
+    db.flush()
+    # MOCK: no SMS gateway, so the demo shows the code on screen.
+    return {'demo_code':code,'expires_in':disbursement.CODE_TTL_SECONDS,'application':workflow.application_json(db,a,staff=False)}
+
+@app.post('/api/v2/applications/{id}/sign')
+def sign_documents_v2(id:str,body:V2SignCode,user=Depends(current_user),db=Depends(db_session)):
+    a=client_v2(db,id,user,body.revision)
+    try:error=disbursement.sign(db,a,body.code,actor=workflow.actor_of(user))
+    except workflow.IllegalTransition as e:raise HTTPException(409,str(e))
+    db.flush()
+    # A response, not an exception: the used-up attempt must commit.
+    if error:return JSONResponse(status_code=422,content={'detail':error,'revision':a.revision})
+    return workflow.application_json(db,a,staff=False)
 
 # --- v2 staff actions (T20): review with a reason code, committee with two signatures ---
 class V2OfferChange(Input):

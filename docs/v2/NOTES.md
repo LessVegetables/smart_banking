@@ -28,10 +28,6 @@ Everything one task leaves for another lives here, filed under the task that has
 - T14 emits `source_unavailable_fns`, `source_unavailable_fssp` and `source_unavailable_arbitration` flags. Apply a score penalty for each degraded source after the econ team defines penalty values; no such values exist in the current policy. (`apps/api/stop_factors.py`)
   - Not handled in T15: the values belong in `config/` (shared-folder PR, econ team). Then apply them in `Scorer.score` (`apps/api/scoring.py`) and show each penalty as its own row in `ScoreResult.contributions`, so points still add up. (T15)
 
-## T21 — documents, signing, disbursement
-
-- `accepted → documents → signed → conditions → disbursed` is in `TRANSITIONS` (`apps/api/workflow.py`); move through `transition(...)`. The chosen offer is `LoanApplication.selected_offer_id`, its terms in `decision['offers']`. Withdrawal is allowed up to `documents`, not after `signed`. (from T19)
-
 ## T22 — overdraft pre-approval
 
 - "Вам доступно до X": `quote(cf, score, ProductId.OVERDRAFT, 12, Route.AUTO, requested=None)` (`apps/api/limits.py`); `amount` is the limit rounded down to 10 000 ₽, with the turnover, cash-flow and leverage constraints applied. Skip `below_product_minimum` and `within_cap == False`. (from T16)
@@ -65,6 +61,11 @@ Everything one task leaves for another lives here, filed under the task that has
 - Several `route_reasons` can carry the same `client_text` ("Заявку проверит специалист банка…"): show distinct texts once. Data-quality route reasons carry `DataQuality.client_message`. (from T18, `apps/api/ROUTING.md`)
 - The client gets `client_decision(...)` (`apps/api/workflow.py`), not the raw `Decision`: `route_messages` and `reasons` are distinct client texts, offers without `expected_profit`, no flags, score or challenger. Accept with `POST /api/v2/applications/{id}/accept` `{"offer_id", "revision"}`; 409 with `expired` when the offer ran out. (from T19)
 
+## T29 — signing → disbursed
+
+- `accept` already lands in `documents` with `closing.documents` (`doc_id`, `title`, `signer`, `text`); show each with `GET /api/v2/applications/{id}/documents/{doc_id}`. Then `POST .../sign/code` `{"revision"}` → `demo_code` to show on screen (no SMS, `# MOCK:`), and `POST .../sign` `{"code", "revision"}`. A wrong or expired code is 422 `{"detail", "revision"}`: show `detail` as is and send the new `revision` next time (`apps/api/DISBURSEMENT.md`). (from T21)
+- After signing the application is in `conditions`; the worker moves it to `disbursed` within a tick. Poll `GET /api/v2/applications/{id}`: `closing.conditions[].status` per condition, `closing.payout.text` is the happy-end line ("… зачислено на счёт …", "… перечислено поставщику …" or "лимит … установлен"). A `failed` condition keeps it in `conditions`: show that the bank is checking it. (from T21)
+
 ## T30 — staff dossier
 
 - `ScoreResult.contributions` has one row per card feature but not the base points: show `points - sum(contributions)` as «базовые баллы». The challenger (`Decision.challenger`) is for staff only, labelled as a shadow model that didn't affect the decision. (from T15)
@@ -73,6 +74,7 @@ Everything one task leaves for another lives here, filed under the task that has
 - "Почему заявка пришла сюда" is `Decision.route_reasons[].staff_text`, one row per condition; the code says which matrix row fired (`apps/api/ROUTING.md`). `Decision` doesn't store each reason's own route (`Routing.routes` does): derive it from the code table if the dossier needs it. (from T18)
 - Staff actions are in the audit log as `review`, `proposal` and `signature` events with the reason code, comment, position and `override`; `pending_review` is a committee decision waiting for its second signature (`apps/api/STAFF_ACTIONS.md`). Staff reasons are `Decision.reasons` with code `staff_<reason code>`. (from T20)
 - `GET /api/v2/applications/{id}` as staff returns `decision`, `data_quality`, `sources` (envelope per source: status, timestamps, latency, attempts, error), `facts` (fact store) and the full `events`; `GET .../events` is the audit log alone (`apps/api/WORKFLOW.md`). Full source payloads are in `LoanApplication.enrichment` if the dossier needs them. (from T19)
+- Signing, conditions and payout are `closing` in the staff view: `signature`, `conditions[].detail` (pledge registration number, invoice check, failure reason), `payout` (account or supplier, payment id). Code issues, wrong codes and condition checks are `action` events in the audit log (`apps/api/DISBURSEMENT.md`). (from T21)
 
 ## T31 — staff actions UI
 
@@ -98,6 +100,10 @@ Everything one task leaves for another lives here, filed under the task that has
 - `MOCK_SOURCES_*` and `WORLD_*` are in `.env.example`. So the API doesn't rebuild the world on every start, write it to `apps/world/out` when building the image. (from T07)
 - The v2 worker runs in the API process (`WORKER_ENABLED`, `worker.loop` → `workflow.tick`) and loads the world on the first v2 application (`default_pipeline`, ~5 s without `apps/world/out`). Mock source latency (`MOCK_SOURCES_*`) applies to every demo run. (from T19)
 
+## T35 — docs
+
+- The simplification registry should take the T21 list from `apps/api/DISBURSEMENT.md`, «Упрощения»: code shown on screen instead of SMS, one code signs the guarantee too, mock pledge registry / supplier invoice / МСП guarantee, payout without real postings. (from T21)
+
 ## T36 — policy simulator
 
 - Pass a changed `CreditPolicy` (`load_policy(path)` or `default_policy().model_copy(...)`, `apps/api/credit_policy.py`) into `quote` / `limit_breakdown`; nothing in T16 reads global state besides the default policy. (from T16)
@@ -115,3 +121,5 @@ Everything one task leaves for another lives here, filed under the task that has
 - `Decision.policy_version` is one string, but a decision is built on three policies; `decide` writes `credit=<v>;data_quality=<v>;features=<v>` (`policy_version` in `apps/api/workflow.py`). Proposed: a shared-folder PR replacing it with separate fields (or a `{credit, data_quality, features}` object). (from T16, T19)
 - Staff reason codes are `# SIMPLIFICATION:` constants `REASON_CODES` / `REJECT_REASON_CODES` in `apps/api/staff_actions.py`. Proposed: a shared-folder PR moving them into `config/` as a versioned directory (econ team and risk owners agree the list). (from T20)
 - Staff can't approve more than the computed limit: `Offer` requires `amount <= limit.limit`, so `change` refuses it (422). If underwriters should be able to go above the limit with a reason code, that needs a contract change (e.g. an override field on `Offer` or `LimitBreakdown`). (from T20)
+- A failed pre-disbursement condition (today only a supplier invoice that doesn't match the loan) leaves the application in `conditions` for good: `TRANSITIONS` has only `conditions → disbursed`, and no staff or back-office action exists (SPEC §12 calls back office optional). Decide on a path (staff fixes and re-checks, or `conditions → declined` / `withdrawn`), then add it in `apps/api/disbursement.py`. (from T21)
+- Signing has no deadline: documents can be signed after the offer's `valid_until`, and there's no `documents → expired` transition. If the bank wants one, add it to `TRANSITIONS` and check it in `disbursement.sign`. (from T21)

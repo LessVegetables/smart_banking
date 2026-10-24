@@ -69,6 +69,7 @@ class LoanApplication(Base):
     offer_valid_until:Mapped[str|None]=mapped_column(String,nullable=True)  # ISO date; offered → expired after it
     selected_offer_id:Mapped[str|None]=mapped_column(String,nullable=True)
     pending_review:Mapped[dict|None]=mapped_column(JSON,nullable=True)  # committee proposal waiting for its second signature (T20)
+    closing:Mapped[dict|None]=mapped_column(JSON,nullable=True)  # documents, signature, conditions, payout (T21, disbursement.py)
     attempts:Mapped[int]=mapped_column(Integer,default=0)  # automatic runs started
     lease_until:Mapped[float|None]=mapped_column(Float,nullable=True)  # worker lease, or "not before" for a retry
     created:Mapped[str]=mapped_column(String,default=now)

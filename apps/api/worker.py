@@ -38,7 +38,7 @@ def run_once():
     return True
 
 def loop(stop):
-    from . import workflow
+    from . import disbursement, workflow
     while not stop.wait(0.5):
         # Recover a worker crash after the lease expires.
         with Session.begin() as db:
@@ -46,6 +46,8 @@ def loop(stop):
         run_once()
         try:workflow.tick()  # v2 applications (T19): the status itself is the queue
         except Exception:workflow.log.exception('workflow tick failed')
+        try:disbursement.tick()  # conditions -> disbursed (T21)
+        except Exception:disbursement.log.exception('disbursement tick failed')
 
 if __name__=='__main__':
     import threading
