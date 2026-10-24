@@ -18,20 +18,15 @@ from datetime import date
 from apps.api.contracts import (AccountsPayload, AmlPayload, ApplicationRequest, ArbitrationPayload, BkiPayload,
                                 ClientCardPayload, EgrulPayload, Fact, FactValue, FnsPayload, FsspPayload, LegalForm,
                                 SourceCallStatus, SourceId, TrustLevel)
+from apps.api.features import business_report, changed_recently, default_policy, months_between
 
 TRUST = {source: TrustLevel.BANK if source in (SourceId.ACCOUNTS, SourceId.CLIENT_CARD) else TrustLevel.REGISTRY
          for source in SourceId if source != SourceId.STATEMENT_UPLOAD}
-CHANGE_WINDOW_MONTHS = 6  # "director or owner changed in the last 6 months" (SPEC §7)
-
-
-def months_between(start: date, end: date) -> int:
-    """Whole months from start to end."""
-    return (end.year - start.year) * 12 + end.month - start.month - (end.day < start.day)
 
 
 def _changed_recently(since: date | None, registered_at: date, today: date) -> bool:
-    """A person who came after registration, within the window. Founding people are no change."""
-    return since is not None and since > registered_at and months_between(since, today) < CHANGE_WINDOW_MONTHS
+    """Within the window of "director or owner changed in the last 6 months" (SPEC §7, config/features.json)."""
+    return changed_recently(since, registered_at, today, default_policy().change_window_months)
 
 
 def _egrul(p: EgrulPayload, today: date) -> dict[str, FactValue | None]:
@@ -48,8 +43,9 @@ def _egrul(p: EgrulPayload, today: date) -> dict[str, FactValue | None]:
 
 
 def _fns(p: FnsPayload, today: date) -> dict[str, FactValue | None]:
-    # SIMPLIFICATION: the revenue of the last filed year as filed, also for a company that
-    # worked only part of that year; annualising it is the feature library's job (T08).
+    # The revenue of the last filed year as filed, also for a company that worked only part
+    # of that year: a fact is the source value as it is. The annualized and 12-month
+    # figures are in the feature library, apps/api/features/revenue.py.
     revenue = p.financials.revenue if p.financials else p.tax_return.income if p.tax_return else None
     return {'annual_revenue': revenue, 'employees': p.employees, 'tax_debt': p.tax_debt,
             'accounts_suspended': p.accounts_suspended, 'mass_address': p.mass_address,
@@ -63,8 +59,7 @@ def _accounts(p: AccountsPayload, today: date) -> dict[str, FactValue | None]:
 
 def _bki(p: BkiPayload, today: date) -> dict[str, FactValue | None]:
     # The business's own debt service: the company report of an ООО, the only report of an ИП.
-    business = next((r for r in p.reports if r.subject == 'company'), None) or \
-        next((r for r in p.reports if r.subject == 'owner'), None)
+    business = business_report(p)
     if business is None:
         return {}
     return {'monthly_debt_payments': sum(loan.monthly_payment for loan in business.loans if loan.closed_at is None)}

@@ -23,6 +23,7 @@ What we build and why: [SPEC.md](SPEC.md) (in Russian). Contracts between tracks
 | 2026-10-24 | The "news feed" line on page 7 of the case PDF is an organizer copy-paste error. Ignore it. |
 | 2026-10-24 | Contracts v1.0 (T00): money in whole rubles, rates/shares/PD/LGD as fractions, `null` = no data. The client's request (`ApplicationRequest`) is a contract too. Thresholds stay in `config/`. |
 | 2026-10-24 | The synthetic world's default outcomes are tuned in `config/world_outcomes.json` (T05): target default rate, effect of `q`, per-industry offsets, shell PD, holdout share. The econ team owns the values. |
+| 2026-10-24 | Feature-library policy is in `config/features.json` (T08): overdue-rule thresholds, inquiry and change windows, ОКВЭД risk groups. Its `version` is the feature-set version; changing it means retraining. The econ team owns the values. |
 
 ## Open questions
 
@@ -65,7 +66,7 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 | T05 | Default outcomes + train/holdout split | S | T01–T04 | done | PR #6 |
 | T06 | Mock source service: ЕГРЮЛ/ЕГРИП, ФНС (+ГИР БО), БКИ, ФССП, арбитраж/Федресурс, 115-ФЗ, internal accounts; configurable latency and failures | M | T00 (fixtures), T01–T04 (real data) | done | PR #7 |
 | T07 | Source adapters + enrichment orchestrator: parallel calls, timeouts, retries, per-source failure policy (SPEC §5) | M | T06 | done | PR #8 |
-| T08 | Shared feature-extraction library, used by training **and** the live engine; includes the MVP overdue rules | M | T00 | todo | |
+| T08 | Shared feature-extraction library, used by training **and** the live engine; includes the MVP overdue rules | M | T00 | done | PR #9 |
 | T09 | Account data-quality metrics and tier `FULL` / `PARTIAL` / `THIN` (SPEC §5.1) | S | T08 | todo | |
 | T10 | Scorecard training: WoE binning, logistic regression, points scaling, export `scorecard_v1.json` | M | T05, T08 | todo | |
 | T11 | Validation metrics: Gini on holdout, calibration by grade, PSI → JSON for the UI | S | T10 | todo | |
