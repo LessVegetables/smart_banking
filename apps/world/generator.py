@@ -1,7 +1,8 @@
 """Synthetic world generator: companies and registry data (SPEC §14, T01), loans and
 account turnovers (T02, `loans.py` and `turnovers.py`), credit-bureau histories (T03,
 `bki.py`), fraud archetypes and clients with incomplete data (T04, `archetypes.py`),
-default outcomes and the train/holdout split (T05, `outcomes.py`).
+default outcomes and the train/holdout split (T05, `outcomes.py`), the client card,
+ФССП, арбитраж / Федресурс and 115-ФЗ answers (T06, `registries.py`).
 
 Every company has a hidden quality q ~ N(0, 1), a hidden archetype and a hidden
 default outcome that follows from both.
@@ -21,8 +22,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from apps.api.contracts import (AccountsPayload, BkiPayload, EgrulPayload, FnsPayload, Founder, GirBoReport, LegalForm,
-                                Person, TaxReturn)
+from apps.api.contracts import (AccountsPayload, AmlPayload, ArbitrationPayload, BkiPayload, ClientCardPayload,
+                                EgrulPayload, FnsPayload, Founder, FsspPayload, GirBoReport, LegalForm, Person, TaxReturn)
 
 from .archetypes import (Archetype, account_profile, declared_revenue, draw_data_gap, draw_fraud, shell_accounts,
                          shell_registry)
@@ -30,9 +31,10 @@ from .bki import add_late_payments, credit_report
 from .industries import BY_KEY, INDUSTRIES, Industry
 from .loans import WorldLoan, draw_loans
 from .outcomes import OutcomeConfig, Sample, draw_outcome, load_outcome_config
+from .registries import aml, arbitration, client_card, fssp
 from .turnovers import generate_accounts
 
-GENERATOR_VERSION = 'world-t05-1'
+GENERATOR_VERSION = 'world-t06-1'
 DEFAULT_SEED = 42
 DEFAULT_N = 5000
 DEFAULT_AS_OF = date(2026, 10, 1)
@@ -61,6 +63,11 @@ class Company(BaseModel):
     loans: list[WorldLoan]  # company loans with their late payments; the account and the bureau follow them
     accounts: AccountsPayload
     bki: BkiPayload  # credit-bureau reports on the company and its owner (T03)
+    # The other sources (T06)
+    client_card: ClientCardPayload
+    fssp: FsspPayload
+    arbitration: ArbitrationPayload
+    aml: AmlPayload
     # Hidden outcome (T05), never shown to the engine
     pd_12m: float  # true probability of default within 12 months after as_of
     default_12m: bool  # 90+ days overdue within 12 months after as_of
@@ -282,6 +289,13 @@ def _company(seed: int, idx: int, as_of: date, outcomes: OutcomeConfig) -> Compa
                                      employees=employees, annual_revenue=annual_revenue,
                                      revenue_growth=revenue_growth, registered_at=registered_at, fns=fns,
                                      loans=loans, as_of=as_of, profile=account_profile(archetype_rng, archetype, as_of))
+    card = client_card(company_rng(seed, company_id, 'client_card'), archetype=archetype, legal_form=legal_form,
+                       accounts=accounts, bki=bki, loans=loans, as_of=as_of)
+    proceedings = fssp(company_rng(seed, company_id, 'fssp'), q=q, egrul=egrul, fns=fns, bki=bki,
+                       annual_revenue=annual_revenue, as_of=as_of)
+    lawsuits = arbitration(company_rng(seed, company_id, 'arbitration'), q=q, industry=industry, egrul=egrul, bki=bki,
+                           annual_revenue=annual_revenue, as_of=as_of)
+    aml_check = aml(company_rng(seed, company_id, 'aml'), q=q, archetype=archetype, egrul=egrul)
     q = round(q, 6)  # the stored q, so that pd_12m can be recomputed from the company alone
     pd_12m, default_12m, sample = draw_outcome(company_rng(seed, company_id, 'outcome'), outcomes, q=q,
                                                industry=industry, archetype=archetype)
@@ -290,6 +304,7 @@ def _company(seed: int, idx: int, as_of: date, outcomes: OutcomeConfig) -> Compa
                    revenue_growth=revenue_growth,
                    declared_annual_revenue=declared_revenue(archetype_rng, archetype, annual_revenue),
                    egrul=egrul, fns=fns, loans=loans, accounts=accounts, bki=bki,
+                   client_card=card, fssp=proceedings, arbitration=lawsuits, aml=aml_check,
                    pd_12m=pd_12m, default_12m=default_12m, sample=sample)
 
 
