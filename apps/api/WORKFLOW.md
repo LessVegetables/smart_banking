@@ -11,7 +11,7 @@ submitted -> enriching -> scoring -> offered | declined | in_review
              enriching <-> needs_data
 in_review -> offered | declined | needs_data          (сотрудник, T20, STAFF_ACTIONS.md)
 in_review -> submitted                                (сотрудник перезапускает расчёт, T20)
-offered -> accepted -> documents -> signed -> conditions -> disbursed   (с documents — T21)
+offered -> accepted -> documents -> signed -> conditions -> disbursed   (T21, DISBURSEMENT.md)
 offered -> expired                                    (срок предложения истёк)
 до подписания из любого статуса -> withdrawn         (клиент)
 enriching | scoring -> submitted                      (прерванный расчёт возвращается в очередь)
@@ -27,7 +27,7 @@ enriching | scoring -> submitted                      (прерванный ра
 |---|---|
 | `at` | Время (UTC, ISO 8601) |
 | `actor` | `system`, `client:<id пользователя>` или `staff:<id пользователя>` |
-| `kind` | `status` — смена статуса; `source` — шаг вызова источника; `action` — данные собраны; `decision` — решение; `error` — сбой расчёта; `review`, `proposal`, `signature` — действия сотрудника и подписи комитета (`STAFF_ACTIONS.md`) |
+| `kind` | `status` — смена статуса; `source` — шаг вызова источника; `action` — данные собраны; `decision` — решение; `error` — сбой расчёта; `review`, `proposal`, `signature` — действия сотрудника и подписи комитета (`STAFF_ACTIONS.md`). Код подписания, неверный код и проверка отлагательных условий (T21) — события `action` |
 | `from_status`, `to_status` | Для `status` |
 | `message` | Текст для человека |
 | `data` | Подробности: попытка и ошибка источника, маршрут, грейд, PD, версии модели и политики, id предложений, коды стоп-факторов и флагов |
@@ -36,7 +36,7 @@ enriching | scoring -> submitted                      (прерванный ра
 
 ## Автоматический расчёт
 
-Worker (`worker.py`, раз в 0,5 с) вызывает `workflow.tick()`:
+Worker (`worker.py`, раз в 0,5 с) вызывает `workflow.tick()` и затем `disbursement.tick()` — отлагательные условия и выдачу (T21, `DISBURSEMENT.md`). `workflow.tick()`:
 
 1. `recover_stale()` — заявки, которые зависли в `enriching` / `scoring` дольше аренды (120 с), считаются сбоем;
 2. `expire_offers()` — `offered` → `expired`, когда прошёл срок последнего предложения (`Offer.valid_until`, 10 дней);
@@ -79,7 +79,8 @@ Worker (`worker.py`, раз в 0,5 с) вызывает `workflow.tick()`:
 | `GET /api/v2/applications[?status=]` | клиент — свои, сотрудник — все | Список |
 | `GET /api/v2/applications/{id}` | клиент, сотрудник | Заявка |
 | `GET /api/v2/applications/{id}/events` | сотрудник | Полный журнал |
-| `POST /api/v2/applications/{id}/accept` | клиент | `{"offer_id", "revision"}`: `offered → accepted`. Просроченное предложение переводит заявку в `expired` и отвечает 409 |
+| `POST /api/v2/applications/{id}/accept` | клиент | `{"offer_id", "revision"}`: `offered → accepted → documents` (документы формируются сразу, T21). Просроченное предложение переводит заявку в `expired` и отвечает 409 |
+| `POST .../sign/code`, `.../sign`, `GET .../documents/{doc_id}` | клиент | Подписание кодом и документы (T21, `DISBURSEMENT.md`) |
 | `POST /api/v2/applications/{id}/withdraw` | клиент | `{"revision"}`: `→ withdrawn` |
 | `POST /api/v2/applications/{id}/review`, `.../review/sign` | сотрудник | Действие с кодом причины и комментарием; вторая подпись комитета (T20, `STAFF_ACTIONS.md`) |
 | `GET /api/v2/staff/reason-codes`, `GET /api/v2/staff/overrides` | сотрудник | Коды причин; как часто сотрудники не соглашаются с системой |

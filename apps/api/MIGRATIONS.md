@@ -9,3 +9,5 @@
 Ревизия `0003_workflow` (T19) добавляет заявки v2 (`loan_applications`) и журнал действий (`application_events`), а хранилище фактов `application_facts` пересоздаёт со ссылкой на `loan_applications` вместо таблицы v1 `applications`. До T19 факты никто не записывал, поэтому данные не теряются.
 
 Ревизия `0004_staff_actions` (T20) добавляет должность сотрудника `users.staff_position` (`underwriter` / `risk_manager`) и `loan_applications.pending_review` — решение комитета, которое ждёт второй подписи. Обе колонки допускают `NULL`: сотрудник без должности считается андеррайтером.
+
+Ревизия `0005_closing` (T21) добавляет `loan_applications.closing` — документы, подпись, отлагательные условия и выдачу заявки (`DISBURSEMENT.md`). Колонка допускает `NULL`: до выбора предложения её нет.

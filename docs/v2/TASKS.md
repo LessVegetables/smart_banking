@@ -93,7 +93,7 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 | T18 | Routing by authority matrix, including data-quality tier (SPEC §11) | S | T09, T14, T15 | done | PR #18 |
 | T19 | Application state machine v2 + events + audit log (SPEC §13) | M | T13 | done | PR #19 |
 | T20 | Staff actions API: review, override with reason code, committee with two signatures | M | T18, T19 | done | PR #20 |
-| T21 | Rework documents, signing, pre-disbursement conditions, disbursement (mock; payout to supplier for equipment loans) | S | T19 | todo | |
+| T21 | Rework documents, signing, pre-disbursement conditions, disbursement (mock; payout to supplier for equipment loans) | S | T19 | done | PR #21 |
 | T22 | Overdraft pre-approval batch (`FULL` tier only) | S | T09, T16 | todo | |
 | T23 | Statement upload for `PARTIAL` / `THIN` clients: mock parsing into a lower-trust source, then recompute | S–M | T09, T19 | todo | |
 | T24 | LLM adapter: OpenAI-compatible, only `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL`, no hard-coded provider. **Hard constraint** — the current `apps/api/assistant.py` calls `api.openai.com` | S | — | todo | |

@@ -5,7 +5,7 @@
     in_review -> offered | declined | needs_data   (staff, T20, staff_actions.py)
     in_review -> submitted                         (staff re-runs the automatic run, T20)
     needs_data -> enriching                        (client sent data, T23)
-    offered -> accepted -> documents -> signed -> conditions -> disbursed   (client; T21 from documents on)
+    offered -> accepted -> documents -> signed -> conditions -> disbursed   (client and worker, T21, disbursement.py)
     offered -> expired                             (offer validity ran out)
     any status before signed -> withdrawn          (client)
 
@@ -452,6 +452,8 @@ def application_json(db: OrmSession, app: LoanApplication, *, staff: bool) -> di
             'revision': app.revision, 'request': app.request, 'created': app.created, 'updated': app.updated,
             'offer_valid_until': app.offer_valid_until, 'selected_offer_id': app.selected_offer_id}
     history = events(db, app.id)
+    from apps.api.disbursement import closing_json  # disbursement imports this module
+    base['closing'] = closing_json(app.closing, staff=staff)
     if not staff:
         return {**base, 'decision': client_decision(app.decision) if app.decision else None,
                 'events': [{'at': e.at, 'status': e.to_status, 'message': e.message}

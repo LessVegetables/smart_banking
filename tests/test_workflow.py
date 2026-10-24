@@ -372,7 +372,7 @@ def test_api_flow(api, world, outcomes):
     assert stale.status_code == 409
     r = api.post(f'/api/v2/applications/{created["id"]}/accept', json={'offer_id': offer_id,
                                                                        'revision': view['revision']})
-    assert r.status_code == 200 and r.json()['status'] == 'accepted'
+    assert r.status_code == 200 and r.json()['status'] == 'documents'  # documents are generated on accept (T21)
     revision = r.json()['revision']
     r = api.post(f'/api/v2/applications/{created["id"]}/withdraw', json={'revision': revision})
     assert r.status_code == 200 and r.json()['status'] == 'withdrawn'
