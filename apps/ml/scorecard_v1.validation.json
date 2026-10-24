@@ -2,7 +2,7 @@
   "scorecard_version": "scorecard_v1",
   "feature_set_version": "features_v0",
   "world": {
-    "generator_version": "world-t06-1",
+    "generator_version": "world-t12-1",
     "seed": 42,
     "n": 5000,
     "as_of": "2026-10-01",

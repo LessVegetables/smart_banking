@@ -12,17 +12,8 @@ Everything one task leaves for another lives here, filed under the task that has
 
 ## Any task
 
-- `q`, `archetype`, `pd_12m` and `default_12m` are hidden truth of the synthetic world. They must never reach features, the engine or the UI; only training labels (T10) and validation (T11) may read the outcome. (from T01–T05, `apps/world/README.md`)
+- `q`, `archetype`, `account_profile`, `pd_12m` and `default_12m` are hidden truth of the synthetic world. They must never reach features, the engine or the UI; only training labels (T10) and validation (T11) may read the outcome, and only the persona selection (T12) reads the archetype and the account profile. (from T01–T05, T12, `apps/world/README.md`)
 - New data in the world gets its own `company_rng` stream; hash tests pin what T01–T05 generate. (from T01, `apps/world/README.md`)
-
-## T12 — demo personas
-
-- World margins are thin: at seed 7, 59% of non-`THIN` companies get a zero cash-flow limit for a 12-month working-capital loan, and only 27% get 100k ₽ or more (`apps/api/LIMITS.md`, «Что видно на синтетическом мире»). Pick approval personas from those, or ask track 1 to raise operating margins in `apps/world/turnovers.py` (then retrain T10). Raised with the econ team. (from T16)
-- Few young companies: about 4% are under 6 months, 13% under a year. If personas need more, shift the age distribution in `_company` (`apps/world/`) or add a young-company group. (from T04)
-- Every archetype has candidates among both ИП and ООО; the shell archetype is ООО only. (from T04)
-- Expected grades come from `apps/ml/scorecard_v1.json`. Retraining it (any change to `config/features.json`, `config/world_outcomes.json` or the world) moves persona grades, so the expected-outcomes table must be regenerated with it. (from T10)
-- The demo needs a statement file for the `PARTIAL` and `THIN` personas (format in `apps/api/STATEMENTS.md`). Only the world knows what runs through other banks: generate one per persona from it (`main_bank_elsewhere`: the other `1 - our_share` of the operations; `new_account`: the months before the account was opened) and ship it with the demo. Track 1 owns `apps/world/`. (from T23)
-- Per-persona source failures (e.g. ФССП down) go in `MOCK_SOURCES_SCENARIOS`; the world doesn't change. For sampling without latency use `payload(company, source)`. (from T06/T07, `apps/sources/README.md`)
 
 ## T15 — scoring adapter
 
@@ -36,6 +27,7 @@ Everything one task leaves for another lives here, filed under the task that has
 - ИНН/ОГРН in `tests/fixtures/` fail checksum validation; generated ones pass. If the UI validates checksums, fix the fixtures through a shared-folder PR. (from T01)
 - Submit with `POST /api/v2/applications` `{"idempotency_key", "request"}`: `request` is `ApplicationRequest` without `application_id` / `submitted_at` (`apps/api/WORKFLOW.md`). The request's ИНН isn't checked against the logged-in user: there is no user → company link yet. Add one if demo profiles stand for companies. (from T19)
 - The pre-approval banner (T29) asks `GET /api/v2/preapproval?inn=…` for any ИНН, so it needs the same user → company link; once it exists, return the pre-approval only for the user's own company (`apps/api/main.py`, `preapproval_v2`). The batch assumes a standing 218-ФЗ consent given at account opening (`# MOCK:` in `standing_request`, `apps/api/preapproval.py`); if T25 adds a consent register, read the consents and the owner's ИНН from it. (from T22)
+- Demo profiles are the T12 personas: `apps/world/demo/personas.json` has each persona's ИНН, legal form, `title`, `story` and the `request` to prefill (load it with `read()` from `apps/world/personas.py`). The v1 `apps/api/personas.py` and `GET /api/personas` still serve the v1 questionnaire; replace them. Don't show `archetype`: it's hidden truth for the demo script. (from T12, `apps/world/PERSONAS.md`)
 
 ## T26 — need intake
 
@@ -52,12 +44,14 @@ Everything one task leaves for another lives here, filed under the task that has
 - Several `route_reasons` can carry the same `client_text` ("Заявку проверит специалист банка…"): show distinct texts once. Data-quality route reasons carry `DataQuality.client_message`. (from T18, `apps/api/ROUTING.md`)
 - The client gets `client_decision(...)` (`apps/api/workflow.py`), not the raw `Decision`: `route_messages` and `reasons` are distinct client texts, offers without `expected_profit`, no flags, score or challenger. Accept with `POST /api/v2/applications/{id}/accept` `{"offer_id", "revision"}`; 409 with `expired` when the offer ran out. (from T19)
 - `needs_data`: show `decision.requested_documents` and `DataQuality.client_message`, upload with `POST /api/v2/applications/{id}/statements` (`multipart/form-data`: `files`, `revision`; 422 = text to show as is) or go on with `.../statements/skip`. Uploaded files are in `statements` of the application. A `PARTIAL` client with automatic offers can't upload (no `offered → enriching` in SPEC §13): the "выписка поможет увеличить лимит" hint means a new application. The re-run after an upload reuses the sources, so it writes no `source` events for the "analyzing" screen (T27). (from T23, `apps/api/STATEMENTS.md`)
+- Statement files for the demo upload are `apps/world/demo/statements/<persona>.json`: `thin_statement` uploads in answer to `needs_data`; `partial_statement` first needs the underwriter's `request_data`. Expected results after the upload are `expected_after_statement` in `apps/world/demo/personas.json`. (from T12)
 
 ## T29 — signing → disbursed, pre-approval banner
 
 - `accept` already lands in `documents` with `closing.documents` (`doc_id`, `title`, `signer`, `text`); show each with `GET /api/v2/applications/{id}/documents/{doc_id}`. Then `POST .../sign/code` `{"revision"}` → `demo_code` to show on screen (no SMS, `# MOCK:`), and `POST .../sign` `{"code", "revision"}`. A wrong or expired code is 422 `{"detail", "revision"}`: show `detail` as is and send the new `revision` next time (`apps/api/DISBURSEMENT.md`). (from T21)
 - After signing the application is in `conditions`; the worker moves it to `disbursed` within a tick. Poll `GET /api/v2/applications/{id}`: `closing.conditions[].status` per condition, `closing.payout.text` is the happy-end line ("… зачислено на счёт …", "… перечислено поставщику …" or "лимит … установлен"). A `failed` condition keeps it in `conditions`: show that the bank is checking it. (from T21)
 - Banner: `GET /api/v2/preapproval?inn=…` returns `{product, term_months, amount, rate, valid_until, client_text}` or `null` (no pre-approval, or it expired); show `client_text` and send the client to an overdraft application at `amount` (`purpose: cash_gap`, `preferred_product: overdraft`, 12 months). Staff get the full `PreApproval` with the reason (`apps/api/PREAPPROVAL.md`). The world needs a first batch: the worker runs it within a second of start-up, or `POST /api/v2/staff/preapproval/run`. (from T22)
+- The banner persona is `auto_ooo` (ИНН `6163001918`): the batch pre-approves an overdraft up to 2 820 000 ₽ (`preapproval` in `apps/world/demo/personas.json`). (from T12)
 
 ## T30 — staff dossier
 
@@ -75,6 +69,7 @@ Everything one task leaves for another lives here, filed under the task that has
 - API: `POST /api/v2/applications/{id}/review` and `.../review/sign`, codes from `GET /api/v2/staff/reason-codes` (per action, plus `reject` for turning a committee proposal down), stats from `GET /api/v2/staff/overrides` (`apps/api/STAFF_ACTIONS.md`). Send `revision`; 409 = stale or waiting for a signature, 422 = text to show as is (e.g. "сумма выше лимита, доступно до …"). (from T20)
 - `outcome: proposed` means the committee: the application stays `in_review` with `pending_review` (proposal, `decision` to sign, `signatures`). The second signer must be the other position and another user. Staff log in with `POST /api/auth/staff` `{"password", "position": "underwriter" | "risk_manager"}`; `GET /api/auth/me` returns `staff_position`. To demo both signatures, use two browser profiles: the session is one cookie. (from T20)
 - The v1 staff screen (`/api/staff/reviews`) still serves v1 applications only; the v2 queue is `GET /api/v2/applications?status=in_review`. (from T20)
+- No persona can demo the committee's two signatures: the `committee` persona (ИНН `3664000050`) reaches the committee route with no offers, because grade D–E companies get a zero limit and grades A–C reach the committee only above the 15M ₽ product maximum. Staff can only decline or request data, which takes one signature. Waiting on the econ team (`things_for_the_econ_team_todo.md`, T12 §3); if they lower the committee bound or DSCR, regenerate the personas. (from T12)
 
 ## T32 — risk-manager page
 
@@ -86,6 +81,7 @@ Everything one task leaves for another lives here, filed under the task that has
 ## T33 — golden tests
 
 - Expected offer sets per persona come from `generate_offers` (`apps/api/offers.py`). The fixture `decision_offered.json` says 890k for the "without the current loan" hint; the engine gives 900k because it re-prices the new amount. Use engine numbers in the expected-outcomes table, not the fixture's. (from T17)
+- The expected-outcomes table is `apps/world/demo/personas.json` (`read()` in `apps/world/personas.py`), built by running each persona through `decide` with mock enrichment (`Conveyor`). `tests/test_world_personas.py` already checks it stays in sync at the `decide` level; T33's job is the run through the API and worker: submit, statement upload, staff actions. Personas need the default world (seed 42, 5000 companies). (from T12, `apps/world/PERSONAS.md`)
 
 ## T34 — Docker
 
@@ -93,12 +89,14 @@ Everything one task leaves for another lives here, filed under the task that has
 - The Dockerfile copies only `apps/api` and `config`: add `apps/ml/` so the scoring adapter (`apps/api/scoring.py` imports `apps.ml`) finds `scorecard_v1.json`, its training passport and `apps.ml.score` in the image, and the risk-manager page (T32) finds `scorecard_v1.validation.json`. `apps.ml.train` needs `apps/world/`, but nothing imports it at runtime. The challenger card `apps/api/scorecards/` is already copied with `apps/api`. Set `SCORECARD_*` from `.env.example` in compose. (from T10, T15)
 - `MOCK_SOURCES_*` and `WORLD_*` are in `.env.example`. So the API doesn't rebuild the world on every start, write it to `apps/world/out` when building the image. (from T07)
 - The v2 worker runs in the API process (`WORKER_ENABLED`, `worker.loop` → `workflow.tick`) and loads the world on the first v2 application (`default_pipeline`, ~5 s without `apps/world/out`). Mock source latency (`MOCK_SOURCES_*`) applies to every demo run. (from T19)
+- The `source_down` persona needs `MOCK_SOURCES_SCENARIOS={"2309002984": {"bki": "error"}}` in `.env.example` and compose. Personas are picked from the default world, so leave `WORLD_SEED` / `WORLD_N` / `WORLD_AS_OF` at their defaults. If the UI serves the demo statement files, copy `apps/world/demo/` into the image. (from T12)
 
 ## T35 — docs
 
 - The simplification registry should take the T21 list from `apps/api/DISBURSEMENT.md`, «Упрощения»: code shown on screen instead of SMS, one code signs the guarantee too, mock pledge registry / supplier invoice / МСП guarantee, payout without real postings. (from T21)
 - Simplification registry: statement upload has no recognition (`# MOCK:`, the file is already parsed JSON), transfers between our account and the other bank aren't netted, the statement's authenticity isn't checked, check thresholds are code constants (`apps/api/STATEMENTS.md`, «Упрощения»). (from T23)
 - Simplification registry: the LLM assistant's timeout (30 s) and answer limit (500 tokens) are code constants in `apps/api/assistant.py`; tests check the request format and the template fallback, never a live model (`README.md`, «Языковая модель»). (from T24)
+- Simplification registry: demo personas are picked by the world's hidden archetype; the other bank's statements come from one made-up bank; a client with a new account moved its whole business to us at once (`apps/world/PERSONAS.md`, «Выписки из другого банка»; `apps/world/README.md`, «Упрощения»). (from T12)
 
 ## T36 — policy simulator
 
