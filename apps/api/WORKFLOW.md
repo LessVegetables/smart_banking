@@ -9,14 +9,15 @@ submitted -> enriching -> scoring -> offered | declined | in_review
              enriching -> declined   (компания не найдена в ЕГРЮЛ / ЕГРИП)
              enriching -> in_review  (обязательный источник недоступен)
              enriching <-> needs_data
-in_review -> offered | declined | needs_data          (сотрудник, T20)
+in_review -> offered | declined | needs_data          (сотрудник, T20, STAFF_ACTIONS.md)
+in_review -> submitted                                (сотрудник перезапускает расчёт, T20)
 offered -> accepted -> documents -> signed -> conditions -> disbursed   (с documents — T21)
 offered -> expired                                    (срок предложения истёк)
 до подписания из любого статуса -> withdrawn         (клиент)
 enriching | scoring -> submitted                      (прерванный расчёт возвращается в очередь)
 ```
 
-Финальные статусы: `declined`, `disbursed`, `withdrawn`, `expired`. Таблица переходов — `TRANSITIONS`. Статус меняет только `transition(db, app, to, actor=..., message=...)`: переход вне таблицы — ошибка `IllegalTransition`, каждый переход пишет событие в журнал. Переходы `enriching → declined / in_review` и `enriching | scoring → submitted` в схеме SPEC §13 не нарисованы: это ранний выход из конвейера и повтор после сбоя.
+Финальные статусы: `declined`, `disbursed`, `withdrawn`, `expired`. Таблица переходов — `TRANSITIONS`. Статус меняет только `transition(db, app, to, actor=..., message=...)`: переход вне таблицы — ошибка `IllegalTransition`, каждый переход пишет событие в журнал. Переходы `enriching → declined / in_review`, `enriching | scoring → submitted` и `in_review → submitted` в схеме SPEC §13 не нарисованы: это ранний выход из конвейера, повтор после сбоя и повторный расчёт по решению сотрудника (например, когда обязательный источник снова доступен).
 
 ## Журнал действий
 
@@ -26,7 +27,7 @@ enriching | scoring -> submitted                      (прерванный ра
 |---|---|
 | `at` | Время (UTC, ISO 8601) |
 | `actor` | `system`, `client:<id пользователя>` или `staff:<id пользователя>` |
-| `kind` | `status` — смена статуса; `source` — шаг вызова источника; `action` — данные собраны; `decision` — решение; `error` — сбой расчёта |
+| `kind` | `status` — смена статуса; `source` — шаг вызова источника; `action` — данные собраны; `decision` — решение; `error` — сбой расчёта; `review`, `proposal`, `signature` — действия сотрудника и подписи комитета (`STAFF_ACTIONS.md`) |
 | `from_status`, `to_status` | Для `status` |
 | `message` | Текст для человека |
 | `data` | Подробности: попытка и ошибка источника, маршрут, грейд, PD, версии модели и политики, id предложений, коды стоп-факторов и флагов |
@@ -60,7 +61,7 @@ Worker (`worker.py`, раз в 0,5 с) вызывает `workflow.tick()`:
 | Карта не подходит к признакам (`FeatureSetMismatch`, T15) | `in_review` | `underwriter`, `route_score_unavailable`; предложений нет |
 | Маршрут `auto`, есть предложения | `offered` | `route_auto` |
 | Маршрут `auto`, предложений нет | `declined` | причины из генератора предложений (T17), повторное обращение через 90 дней |
-| Маршрут андеррайтер или комитет | `in_review` | причины T18; посчитанные предложения остаются в `Decision`, сотрудник одобряет или меняет их (T20) |
+| Маршрут андеррайтер или комитет | `in_review` | причины T18; посчитанные предложения остаются в `Decision`, сотрудник одобряет или меняет их (T20, `STAFF_ACTIONS.md`) |
 
 Порядок вызовов: `data_quality_from_responses` → `evaluate_stop_factors` → `features_from_responses` → `score` (основная модель решает, претендент только записывается) → `cash_flow_from_responses` → `generate_offers(..., route_for(grade, flags, data_quality), день решения)` → `route_application`.
 
@@ -80,10 +81,12 @@ Worker (`worker.py`, раз в 0,5 с) вызывает `workflow.tick()`:
 | `GET /api/v2/applications/{id}/events` | сотрудник | Полный журнал |
 | `POST /api/v2/applications/{id}/accept` | клиент | `{"offer_id", "revision"}`: `offered → accepted`. Просроченное предложение переводит заявку в `expired` и отвечает 409 |
 | `POST /api/v2/applications/{id}/withdraw` | клиент | `{"revision"}`: `→ withdrawn` |
+| `POST /api/v2/applications/{id}/review`, `.../review/sign` | сотрудник | Действие с кодом причины и комментарием; вторая подпись комитета (T20, `STAFF_ACTIONS.md`) |
+| `GET /api/v2/staff/reason-codes`, `GET /api/v2/staff/overrides` | сотрудник | Коды причин; как часто сотрудники не соглашаются с системой |
 
 `revision` — версия строки заявки. Если она устарела, ответ 409: заявка изменилась.
 
-Клиент видит запрос, смены статусов, ход опроса источников (`sources`: источник, попытка, статус, без текста ошибки) и сокращённое решение (`client_decision`): клиентские тексты причин без повторов, предложения без ожидаемой прибыли, контрфактические подсказки, уровень данных с фразой для клиента, дату повторного обращения. Флаги, баллы, PD, модель-претендент, тексты для сотрудника и журнал с исполнителями клиенту не отдаются: среди них есть признаки ПОД/ФТ (SPEC §1.11). Сотрудник видит всё: `Decision`, `DataQuality`, статусы источников, факты, полный журнал.
+Клиент видит запрос, смены статусов, ход опроса источников (`sources`: источник, попытка, статус, без текста ошибки) и сокращённое решение (`client_decision`): клиентские тексты причин без повторов, предложения без ожидаемой прибыли, контрфактические подсказки, уровень данных с фразой для клиента, дату повторного обращения. Флаги, баллы, PD, модель-претендент, тексты для сотрудника и журнал с исполнителями клиенту не отдаются: среди них есть признаки ПОД/ФТ (SPEC §1.11). Сотрудник видит всё: `Decision`, `DataQuality`, статусы источников, факты, полный журнал и `pending_review` — решение, которое ждёт второй подписи комитета.
 
 ## Упрощения
 
