@@ -63,7 +63,7 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 | T04 | Fraud archetypes (shell, inflater), declared-vs-real noise, incomplete-data clients (main account elsewhere, new account, inflated by own transfers) | S | T02, T03 | done | PR #5 |
 | T05 | Default outcomes + train/holdout split | S | T01–T04 | done | PR #6 |
 | T06 | Mock source service: ЕГРЮЛ/ЕГРИП, ФНС (+ГИР БО), БКИ, ФССП, арбитраж/Федресурс, 115-ФЗ, internal accounts; configurable latency and failures | M | T00 (fixtures), T01–T04 (real data) | done | PR #7 |
-| T07 | Source adapters + enrichment orchestrator: parallel calls, timeouts, retries, per-source failure policy (SPEC §5) | M | T06 | todo | |
+| T07 | Source adapters + enrichment orchestrator: parallel calls, timeouts, retries, per-source failure policy (SPEC §5) | M | T06 | done | PR #8 |
 | T08 | Shared feature-extraction library, used by training **and** the live engine; includes the MVP overdue rules | M | T00 | todo | |
 | T09 | Account data-quality metrics and tier `FULL` / `PARTIAL` / `THIN` (SPEC §5.1) | S | T08 | todo | |
 | T10 | Scorecard training: WoE binning, logistic regression, points scaling, export `scorecard_v1.json` | M | T05, T08 | todo | |
