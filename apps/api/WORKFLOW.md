@@ -42,6 +42,8 @@ Worker (`worker.py`, раз в 0,5 с) вызывает `workflow.tick()` и з�
 2. `expire_offers()` — `offered` → `expired`, когда прошёл срок последнего предложения (`Offer.valid_until`, 10 дней);
 3. `run_next()` — берёт самую старую заявку `submitted`. Захват — это сам переход `submitted → enriching` с проверкой версии строки, поэтому два worker не возьмут одну заявку.
 
+После этого worker вызывает `preapproval.tick()`: раз в сутки, в отдельном потоке, считается предодобренный овердрафт (T22, `PREAPPROVAL.md`).
+
 `run_application`:
 
 1. `enrich` — все источники параллельно (T07).
@@ -84,6 +86,7 @@ Worker (`worker.py`, раз в 0,5 с) вызывает `workflow.tick()` и з�
 | `POST /api/v2/applications/{id}/withdraw` | клиент | `{"revision"}`: `→ withdrawn` |
 | `POST /api/v2/applications/{id}/review`, `.../review/sign` | сотрудник | Действие с кодом причины и комментарием; вторая подпись комитета (T20, `STAFF_ACTIONS.md`) |
 | `GET /api/v2/staff/reason-codes`, `GET /api/v2/staff/overrides` | сотрудник | Коды причин; как часто сотрудники не соглашаются с системой |
+| `GET /api/v2/preapproval?inn=…`, `POST /api/v2/staff/preapproval/run` | клиент, сотрудник | Предодобренный овердрафт для баннера; запуск расчёта (T22, `PREAPPROVAL.md`) |
 
 `revision` — версия строки заявки. Если она устарела, ответ 409: заявка изменилась.
 

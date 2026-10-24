@@ -28,10 +28,6 @@ Everything one task leaves for another lives here, filed under the task that has
 - T14 emits `source_unavailable_fns`, `source_unavailable_fssp` and `source_unavailable_arbitration` flags. Apply a score penalty for each degraded source after the econ team defines penalty values; no such values exist in the current policy. (`apps/api/stop_factors.py`)
   - Not handled in T15: the values belong in `config/` (shared-folder PR, econ team). Then apply them in `Scorer.score` (`apps/api/scoring.py`) and show each penalty as its own row in `ScoreResult.contributions`, so points still add up. (T15)
 
-## T22 — overdraft pre-approval
-
-- "Вам доступно до X": `quote(cf, score, ProductId.OVERDRAFT, 12, Route.AUTO, requested=None)` (`apps/api/limits.py`); `amount` is the limit rounded down to 10 000 ₽, with the turnover, cash-flow and leverage constraints applied. Skip `below_product_minimum` and `within_cap == False`. (from T16)
-- The batch has no application: call `data_quality(payloads)` without `declared_revenue`. A company with no ФНС revenue then gets `revenue_coverage = null` → `THIN`, so it is never pre-approved. (from T09)
 
 ## T23 — statement upload
 
@@ -45,6 +41,7 @@ Everything one task leaves for another lives here, filed under the task that has
 - Collect both 218-ФЗ consents: `bki_company` with the company's ИНН and `bki_owner` with the main owner's ИНН (for ИП: the entrepreneur's ИНН). Without them БКИ isn't queried and the application can't go past the underwriter. (from T07)
 - ИНН/ОГРН in `tests/fixtures/` fail checksum validation; generated ones pass. If the UI validates checksums, fix the fixtures through a shared-folder PR. (from T01)
 - Submit with `POST /api/v2/applications` `{"idempotency_key", "request"}`: `request` is `ApplicationRequest` without `application_id` / `submitted_at` (`apps/api/WORKFLOW.md`). The request's ИНН isn't checked against the logged-in user: there is no user → company link yet. Add one if demo profiles stand for companies. (from T19)
+- The pre-approval banner (T29) asks `GET /api/v2/preapproval?inn=…` for any ИНН, so it needs the same user → company link; once it exists, return the pre-approval only for the user's own company (`apps/api/main.py`, `preapproval_v2`). The batch assumes a standing 218-ФЗ consent given at account opening (`# MOCK:` in `standing_request`, `apps/api/preapproval.py`); if T25 adds a consent register, read the consents and the owner's ИНН from it. (from T22)
 
 ## T26 — need intake
 
@@ -61,10 +58,11 @@ Everything one task leaves for another lives here, filed under the task that has
 - Several `route_reasons` can carry the same `client_text` ("Заявку проверит специалист банка…"): show distinct texts once. Data-quality route reasons carry `DataQuality.client_message`. (from T18, `apps/api/ROUTING.md`)
 - The client gets `client_decision(...)` (`apps/api/workflow.py`), not the raw `Decision`: `route_messages` and `reasons` are distinct client texts, offers without `expected_profit`, no flags, score or challenger. Accept with `POST /api/v2/applications/{id}/accept` `{"offer_id", "revision"}`; 409 with `expired` when the offer ran out. (from T19)
 
-## T29 — signing → disbursed
+## T29 — signing → disbursed, pre-approval banner
 
 - `accept` already lands in `documents` with `closing.documents` (`doc_id`, `title`, `signer`, `text`); show each with `GET /api/v2/applications/{id}/documents/{doc_id}`. Then `POST .../sign/code` `{"revision"}` → `demo_code` to show on screen (no SMS, `# MOCK:`), and `POST .../sign` `{"code", "revision"}`. A wrong or expired code is 422 `{"detail", "revision"}`: show `detail` as is and send the new `revision` next time (`apps/api/DISBURSEMENT.md`). (from T21)
 - After signing the application is in `conditions`; the worker moves it to `disbursed` within a tick. Poll `GET /api/v2/applications/{id}`: `closing.conditions[].status` per condition, `closing.payout.text` is the happy-end line ("… зачислено на счёт …", "… перечислено поставщику …" or "лимит … установлен"). A `failed` condition keeps it in `conditions`: show that the bank is checking it. (from T21)
+- Banner: `GET /api/v2/preapproval?inn=…` returns `{product, term_months, amount, rate, valid_until, client_text}` or `null` (no pre-approval, or it expired); show `client_text` and send the client to an overdraft application at `amount` (`purpose: cash_gap`, `preferred_product: overdraft`, 12 months). Staff get the full `PreApproval` with the reason (`apps/api/PREAPPROVAL.md`). The world needs a first batch: the worker runs it within a second of start-up, or `POST /api/v2/staff/preapproval/run`. (from T22)
 
 ## T30 — staff dossier
 
@@ -120,6 +118,7 @@ Everything one task leaves for another lives here, filed under the task that has
 - The SPEC §11 authority matrix is hard-coded in `apps/api/routing.py` as the `# SIMPLIFICATION:` `RoutingPolicy` defaults (auto up to 5M ₽ `FULL` / 1M ₽ `PARTIAL`, underwriter up to 15M ₽, auto grades A–C, committee for D/E above 5M ₽). Proposed: a shared-folder PR adding a `routing` block to `config/credit_policy.json` and `CreditPolicy` (econ team owns the values; also confirm grade E = D), then build `RoutingPolicy` from it. (from T18)
 - `Decision.policy_version` is one string, but a decision is built on three policies; `decide` writes `credit=<v>;data_quality=<v>;features=<v>` (`policy_version` in `apps/api/workflow.py`). Proposed: a shared-folder PR replacing it with separate fields (or a `{credit, data_quality, features}` object). (from T16, T19)
 - Staff reason codes are `# SIMPLIFICATION:` constants `REASON_CODES` / `REJECT_REASON_CODES` in `apps/api/staff_actions.py`. Proposed: a shared-folder PR moving them into `config/` as a versioned directory (econ team and risk owners agree the list). (from T20)
+- Pre-approval values are `# SIMPLIFICATION:` constants in `apps/api/preapproval.py`: `VALID_DAYS = 30`, `BATCH_EVERY_SECONDS` (a day). Proposed: move them with the T17 offer values into an `offers` block of `config/credit_policy.json` (shared-folder PR, econ team owns the values). `PreApproval` is not a contract either: if the UI wants generated types, propose moving it into `apps/api/contracts.py`. (from T22)
 - Staff can't approve more than the computed limit: `Offer` requires `amount <= limit.limit`, so `change` refuses it (422). If underwriters should be able to go above the limit with a reason code, that needs a contract change (e.g. an override field on `Offer` or `LimitBreakdown`). (from T20)
 - A failed pre-disbursement condition (today only a supplier invoice that doesn't match the loan) leaves the application in `conditions` for good: `TRANSITIONS` has only `conditions → disbursed`, and no staff or back-office action exists (SPEC §12 calls back office optional). Decide on a path (staff fixes and re-checks, or `conditions → declined` / `withdrawn`), then add it in `apps/api/disbursement.py`. (from T21)
 - Signing has no deadline: documents can be signed after the offer's `valid_until`, and there's no `documents → expired` transition. If the bank wants one, add it to `TRANSITIONS` and check it in `disbursement.sign`. (from T21)
