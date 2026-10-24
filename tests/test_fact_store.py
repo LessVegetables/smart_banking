@@ -10,7 +10,8 @@ from apps.api.fact_store import load_facts, save_facts
 
 def test_fact_store_round_trip_and_replace(tmp_path, monkeypatch):
     engine = create_engine(f"sqlite:///{tmp_path / 'legacy.db'}")
-    legacy_tables = [table for table in db.Base.metadata.sorted_tables if table.name != 'application_facts']
+    legacy_names = {'users', 'sessions', 'surveys', 'applications', 'submission_keys', 'documents', 'jobs'}
+    legacy_tables = [table for table in db.Base.metadata.sorted_tables if table.name in legacy_names]
     db.Base.metadata.create_all(engine, tables=legacy_tables)
     with Session(engine) as session, session.begin():
         session.add(db.User(id='preserved-user', name='Existing user'))
@@ -54,5 +55,5 @@ def test_fresh_database_uses_baseline_migration(tmp_path, monkeypatch):
     tables = set(inspect(engine).get_table_names())
     assert {'users', 'applications', 'application_facts', 'alembic_version'} <= tables
     with engine.connect() as connection:
-        assert connection.exec_driver_sql('SELECT version_num FROM alembic_version').scalar_one() == '0002_fact_store'
+        assert connection.exec_driver_sql('SELECT version_num FROM alembic_version').scalar_one() == '0003_workflow'
     engine.dispose()

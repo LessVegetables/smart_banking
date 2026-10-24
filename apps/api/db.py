@@ -53,11 +53,44 @@ class Application(Base):
     created:Mapped[str]=mapped_column(String,default=now)
     __mapper_args__={'version_id_col':revision,'version_id_generator':False}
 
+class LoanApplication(Base):
+    """A v2 application (T19): the client's `ApplicationRequest`, its status (SPEC §13) and the engine's results."""
+    __tablename__='loan_applications'
+    id:Mapped[str]=mapped_column(String,primary_key=True)
+    user_id:Mapped[str]=mapped_column(ForeignKey('users.id'),index=True)
+    idempotency_key:Mapped[str]=mapped_column(String,unique=True)
+    status:Mapped[str]=mapped_column(String,index=True)
+    revision:Mapped[int]=mapped_column(Integer,default=1)
+    request:Mapped[dict]=mapped_column(JSON)  # ApplicationRequest
+    enrichment:Mapped[dict|None]=mapped_column(JSON,nullable=True)  # Enrichment without facts (they're in the fact store)
+    data_quality:Mapped[dict|None]=mapped_column(JSON,nullable=True)  # DataQuality
+    decision:Mapped[dict|None]=mapped_column(JSON,nullable=True)  # the latest Decision
+    offer_valid_until:Mapped[str|None]=mapped_column(String,nullable=True)  # ISO date; offered → expired after it
+    selected_offer_id:Mapped[str|None]=mapped_column(String,nullable=True)
+    attempts:Mapped[int]=mapped_column(Integer,default=0)  # automatic runs started
+    lease_until:Mapped[float|None]=mapped_column(Float,nullable=True)  # worker lease, or "not before" for a retry
+    created:Mapped[str]=mapped_column(String,default=now)
+    updated:Mapped[str]=mapped_column(String,default=now)
+    __mapper_args__={'version_id_col':revision}
+
+class ApplicationEvent(Base):
+    """Append-only audit log of a v2 application: status changes, source calls, decisions, actions."""
+    __tablename__='application_events'
+    id:Mapped[int]=mapped_column(Integer,primary_key=True,autoincrement=True)
+    application_id:Mapped[str]=mapped_column(ForeignKey('loan_applications.id',ondelete='CASCADE'),index=True)
+    at:Mapped[str]=mapped_column(String,default=now)
+    actor:Mapped[str]=mapped_column(String)  # 'system', or 'client:<user id>' / 'staff:<user id>'
+    kind:Mapped[str]=mapped_column(String)  # status | source | decision | action | error
+    from_status:Mapped[str|None]=mapped_column(String,nullable=True)
+    to_status:Mapped[str|None]=mapped_column(String,nullable=True)
+    message:Mapped[str]=mapped_column(String)
+    data:Mapped[dict|None]=mapped_column(JSON,nullable=True)
+
 class ApplicationFact(Base):
     __tablename__='application_facts'
     __table_args__=(UniqueConstraint('application_id','name','source_key',name='uq_application_fact_source'),)
     id:Mapped[str]=mapped_column(String,primary_key=True,default=uid)
-    application_id:Mapped[str]=mapped_column(ForeignKey('applications.id',ondelete='CASCADE'),index=True)
+    application_id:Mapped[str]=mapped_column(ForeignKey('loan_applications.id',ondelete='CASCADE'),index=True)
     name:Mapped[str]=mapped_column(String,index=True)
     source_key:Mapped[str]=mapped_column(String)
     declared_value:Mapped[Any|None]=mapped_column(JSON,nullable=True)

@@ -38,11 +38,14 @@ def run_once():
     return True
 
 def loop(stop):
+    from . import workflow
     while not stop.wait(0.5):
         # Recover a worker crash after the lease expires.
         with Session.begin() as db:
             db.execute(update(Job).where(Job.state=='running',Job.available<time.time()).values(state='pending'))
         run_once()
+        try:workflow.tick()  # v2 applications (T19): the status itself is the queue
+        except Exception:workflow.log.exception('workflow tick failed')
 
 if __name__=='__main__':
     import threading
