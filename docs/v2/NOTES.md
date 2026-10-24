@@ -28,10 +28,6 @@ Everything one task leaves for another lives here, filed under the task that has
 - Expected grades come from `apps/ml/scorecard_v1.json`. Retraining it (any change to `config/features.json`, `config/world_outcomes.json` or the world) moves persona grades, so the expected-outcomes table must be regenerated with it. (from T10)
 - Per-persona source failures (e.g. ФССП down) go in `MOCK_SOURCES_SCENARIOS`; the world doesn't change. For sampling without latency use `payload(company, source)`. (from T06/T07, `apps/sources/README.md`)
 
-## T13 — fact store
-
-- `Enrichment` round-trips through `model_dump_json` / `model_validate_json`; its facts are contract `Fact` objects. (from T07)
-
 ## T14 — stop-factors and flags
 
 - Revenue mismatch flag: compare the declared revenue with `fns_revenue(...).estimate_12m` (`apps/api/features/revenue.py`), not with ФНС as filed: 7% / 15% of honest clients instead of 21% / 82%. (from T08, `apps/api/features/README.md`)
@@ -54,6 +50,7 @@ Everything one task leaves for another lives here, filed under the task that has
 
 ## T19 — state machine
 
+- Persist completed `Enrichment.facts` through `apps/api/fact_store.py` in the application workflow transaction; T13 provides the store, but no workflow calls it yet. (from T13)
 - Features need an `as_of`: `features_from_responses` takes the day the sources answered. The mock world is frozen at `WORLD_AS_OF` (default 2026-10-01), so the further today is from it, the more business age, episode ages and the 3-month inquiry window drift from the world's data. Decide which date the demo pipeline passes (probably the world's `as_of`). (from T08)
 - Stage 3 ends with the data-quality tier: call `data_quality_from_responses(enrichment.responses, request.declared_annual_revenue)` right after `enrich` and store it with the application. (from T09)
 - `company_not_found` → the application can't be processed; enrichment not complete (`unavailable_required`) → underwriter queue with reason "source unavailable"; otherwise → stop-factors and scoring. (from T07, `apps/sources/README.md`)

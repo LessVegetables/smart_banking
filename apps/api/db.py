@@ -2,7 +2,10 @@ import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from sqlalchemy import create_engine, String, Integer, JSON, Float, ForeignKey
+from typing import Any
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import create_engine, String, Integer, JSON, Float, ForeignKey, UniqueConstraint, inspect
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 DATA=Path(os.environ.get('DATA_DIR','data')).resolve(); DATA.mkdir(parents=True,exist_ok=True)
@@ -49,6 +52,20 @@ class Application(Base):
     documents_reviewed:Mapped[int]=mapped_column(Integer,default=0)
     created:Mapped[str]=mapped_column(String,default=now)
     __mapper_args__={'version_id_col':revision,'version_id_generator':False}
+
+class ApplicationFact(Base):
+    __tablename__='application_facts'
+    __table_args__=(UniqueConstraint('application_id','name','source_key',name='uq_application_fact_source'),)
+    id:Mapped[str]=mapped_column(String,primary_key=True,default=uid)
+    application_id:Mapped[str]=mapped_column(ForeignKey('applications.id',ondelete='CASCADE'),index=True)
+    name:Mapped[str]=mapped_column(String,index=True)
+    source_key:Mapped[str]=mapped_column(String)
+    declared_value:Mapped[Any|None]=mapped_column(JSON,nullable=True)
+    verified_value:Mapped[Any|None]=mapped_column(JSON,nullable=True)
+    source:Mapped[str|None]=mapped_column(String,nullable=True)
+    trust_level:Mapped[str]=mapped_column(String)
+    fetched_at:Mapped[str|None]=mapped_column(String,nullable=True)
+    discrepancy:Mapped[float|None]=mapped_column(Float,nullable=True)
 class SubmissionKey(Base):
     __tablename__='submission_keys'
     key:Mapped[str]=mapped_column(String,primary_key=True)
@@ -71,4 +88,24 @@ class Job(Base):
     error:Mapped[str|None]=mapped_column(String,nullable=True)
     available:Mapped[float]=mapped_column(Float,default=0)
 
-def init_db():Base.metadata.create_all(engine)
+def init_db():
+    """Adopt the pre-Alembic schema when present, then apply versioned migrations."""
+    config=Config(str(Path(__file__).resolve().parents[2]/'alembic.ini'))
+    config.set_main_option('sqlalchemy.url',URL.replace('%','%%'))
+    with engine.begin() as connection:
+        config.attributes['connection']=connection
+        if not inspect(connection).has_table('alembic_version'):
+            tables=set(inspect(connection).get_table_names())
+            legacy_tables={'users','sessions','surveys','applications','submission_keys','documents','jobs'}
+            existing_legacy=tables & legacy_tables
+            if existing_legacy:
+                if existing_legacy != legacy_tables:
+                    missing=', '.join(sorted(legacy_tables-existing_legacy))
+                    raise RuntimeError(f'Cannot adopt partial legacy schema; missing tables: {missing}')
+                # Existing installs predate Alembic. Mark their intact schema without
+                # recreating tables or touching their data.
+                command.stamp(config,'0001_baseline')
+            else:
+                # A new install builds its initial schema from the immutable baseline.
+                command.upgrade(config,'0001_baseline')
+        command.upgrade(config,'head')
