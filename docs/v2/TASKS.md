@@ -61,7 +61,7 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 | T02 | Monthly account turnovers by category (customers, suppliers, payroll, taxes, rent, loans, cash, own transfers), seasonality and trend | M | T01 | done | PR #3 |
 | T03 | Credit-bureau histories for company and owner: loans, delinquencies, inquiries | M | T01 | done | PR #4 |
 | T04 | Fraud archetypes (shell, inflater), declared-vs-real noise, incomplete-data clients (main account elsewhere, new account, inflated by own transfers) | S | T02, T03 | done | PR #5 |
-| T05 | Default outcomes + train/holdout split | S | T01–T04 | done | |
+| T05 | Default outcomes + train/holdout split | S | T01–T04 | done | PR #6 |
 | T06 | Mock source service: ЕГРЮЛ/ЕГРИП, ФНС (+ГИР БО), БКИ, ФССП, арбитраж/Федресурс, 115-ФЗ, internal accounts; configurable latency and failures | M | T00 (fixtures), T01–T04 (real data) | todo | |
 | T07 | Source adapters + enrichment orchestrator: parallel calls, timeouts, retries, per-source failure policy (SPEC §5) | M | T06 | todo | |
 | T08 | Shared feature-extraction library, used by training **and** the live engine; includes the MVP overdue rules | M | T00 | todo | |
