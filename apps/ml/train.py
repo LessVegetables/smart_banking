@@ -19,8 +19,6 @@ from dataclasses import dataclass, field
 from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
-
 from apps.api.contracts import Features, GradeBound, Scorecard, ScorecardBin, ScorecardFeature, ScorecardScaling
 from apps.api.features import SourcePayloads, extract_features
 from apps.world import World, train_holdout
@@ -28,6 +26,7 @@ from apps.world import World, train_holdout
 from .binning import Binning, BinningSettings, bin_feature
 from .labels import CATEGORIES, FEATURE_LABELS, MISSING_LABEL, category_label, numeric_bin_label
 from .logreg import fit_logistic
+from .report import WorldInfo, _Report
 from .score import gini, total_points
 
 FEATURES = [name for name in Features.model_fields if name != 'feature_set_version']
@@ -45,18 +44,6 @@ class TrainingSettings:
     min_iv: float = 0.02  # below this information value a feature doesn't discriminate
     min_z: float = 2.0  # coefficient / standard error; also drops coefficients with the wrong sign
     ridge: float = 1e-3
-
-
-class _Report(BaseModel):
-    model_config = ConfigDict(extra='forbid')
-
-
-class WorldInfo(_Report):
-    generator_version: str
-    seed: int
-    n: int
-    as_of: date
-    outcomes_version: str
 
 
 class FeatureReport(_Report):
@@ -85,6 +72,12 @@ class TrainingReport(_Report):
 class TrainingResult:
     scorecard: Scorecard
     report: TrainingReport
+
+
+def world_info(world: World) -> WorldInfo:
+    meta = world.meta
+    return WorldInfo(generator_version=meta.generator_version, seed=meta.seed, n=meta.n, as_of=meta.as_of,
+                     outcomes_version=meta.outcomes.version)
 
 
 def training_sample(world: World) -> tuple[list[Features], list[bool]]:
@@ -172,8 +165,7 @@ def train_scorecard(world: World, *, version: str = 'scorecard_v1', created_at: 
     report = TrainingReport(
         scorecard_version=version,
         feature_set_version=features[0].feature_set_version,
-        world=WorldInfo(generator_version=meta.generator_version, seed=meta.seed, n=meta.n, as_of=meta.as_of,
-                        outcomes_version=meta.outcomes.version),
+        world=world_info(world),
         companies=len(features),
         defaults=defaults,
         settings={'min_iv': s.min_iv, 'min_z': s.min_z, 'ridge': s.ridge, **s.binning.__dict__},

@@ -1,4 +1,5 @@
-"""Scorecard training (T10): WoE binning, logistic regression, points, the committed scorecard_v1."""
+"""Scorecard training (T10) and validation (T11): WoE binning, logistic regression, points, validation
+metrics, the committed scorecard_v1."""
 import math
 import random
 import subprocess
@@ -16,6 +17,9 @@ from apps.ml.binning import bin_feature
 from apps.ml.labels import numeric_bin_label
 from apps.ml.logreg import fit_logistic
 from apps.ml.train import GRADES, TrainingReport, train_scorecard, training_sample
+from apps.ml.validate import validate_scorecard
+from apps.ml.validation import (ValidationReport, band_label, band_labels, calibration, cap_curve, gini_interval, psi,
+                                psi_status, score_bands, wilson_interval)
 from apps.world import generate_world, train_holdout
 
 AS_OF = date(2026, 10, 1)
@@ -146,6 +150,87 @@ def test_training_is_reproducible(world, trained):
     assert train_scorecard(world, created_at=CREATED) == trained
 
 
+# --- Validation metrics -----------------------------------------------------------
+
+def test_psi():
+    same = psi('x', 'x', ['a', 'b'], ['a', 'b'] * 50, ['a', 'b'] * 50)
+    assert same.value == 0 and same.status == 'stable'
+    moved = psi('x', 'x', ['a', 'b'], ['a'] * 50 + ['b'] * 50, ['a'] * 70 + ['b'] * 30)
+    expected = (0.7 - 0.5) * math.log(0.7 / 0.5) + (0.3 - 0.5) * math.log(0.3 / 0.5)
+    assert moved.value == pytest.approx(expected, abs=1e-4)
+    assert moved.status == 'watch'
+    # A bucket empty in one population doesn't make PSI infinite.
+    empty = psi('x', 'x', ['a', 'b', 'c'], ['a', 'b'] * 50, ['a', 'b', 'c'] * 30)
+    assert math.isfinite(empty.value) and empty.status == 'shift'
+    assert [psi_status(v) for v in (0.099, 0.1, 0.25)] == ['stable', 'watch', 'shift']
+
+
+def test_wilson_interval():
+    low, high = wilson_interval(10, 100)
+    assert (low, high) == (pytest.approx(0.0552, abs=1e-4), pytest.approx(0.1744, abs=1e-4))
+    low, high = wilson_interval(0, 50)
+    assert low == 0 and 0 < high < 0.1  # no defaults still leaves room for some risk
+
+
+def test_gini_interval_narrows_with_more_defaults():
+    small, large = gini_interval(0.5, 20, 300), gini_interval(0.5, 200, 3000)
+    assert small[0] < large[0] < 0.5 < large[1] < small[1]
+
+
+def test_cap_curve():
+    perfect = cap_curve([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [True, True] + [False] * 8, points=5)
+    assert [(p.companies_share, p.defaults_share) for p in perfect] == [
+        (0, 0), (0.2, 1), (0.4, 1), (0.6, 1), (0.8, 1), (1, 1)]
+
+
+def test_calibration_by_grade():
+    scorecard = Scorecard.model_validate_json((ML / 'scorecard_v1.json').read_text('utf-8'))
+    pds = [0.01] * 100 + [0.2] * 100
+    bads = [i < 1 for i in range(100)] + [i < 40 for i in range(100)]  # A: 1% as predicted; E: 40% against 20%
+    result = calibration(scorecard, pds, bads)
+    by_grade = {g.grade: g for g in result.grades}
+    assert by_grade['A'].predicted_vs_actual == 'within' and by_grade['E'].predicted_vs_actual == 'below'
+    assert by_grade['B'].companies == 0 and by_grade['B'].predicted_pd is None
+    assert [(g.pd_min, g.pd_max) for g in result.grades][:2] == [(0, 0.015), (0.015, 0.03)]
+
+
+def test_score_bands():
+    cuts = score_bands(list(range(100)), bands=4)
+    assert cuts == [25, 50, 75]
+    assert band_labels(cuts) == ['меньше 25', '25–50', '50–75', '75 и больше']
+    assert [band_label(cuts, x) for x in (-5, 25, 74.9, 1e6)] == ['меньше 25', '25–50', '50–75', '75 и больше']
+    assert band_labels(score_bands([1.5] * 10)) == ['любое значение']
+
+
+@pytest.fixture(scope='module')
+def validation(world, trained):
+    return validate_scorecard(world, trained.scorecard)
+
+
+def test_validation_report(world, trained, validation):
+    assert ValidationReport.model_validate_json(validation.model_dump_json()) == validation
+    train, holdout = validation.samples
+    assert holdout.companies == len(train_holdout(world)[1])
+    assert validation.gini.train == pytest.approx(trained.report.gini_train, abs=1e-4)
+    assert 0.35 < validation.gini.holdout < validation.gini.true_pd_ceiling
+    assert validation.gini.holdout_ci_low < validation.gini.holdout < validation.gini.holdout_ci_high
+    assert validation.cap[0].defaults_share == 0 and validation.cap[-1].defaults_share == 1
+    assert sum(g.companies for g in validation.calibration.grades) == holdout.companies
+    assert sum(g.defaults for g in validation.calibration.grades) == holdout.defaults
+    # A random split of one snapshot: the holdout is the same population as the training sample.
+    for p in [validation.psi_grades, validation.psi_points, *validation.psi_features]:
+        assert p.status == 'stable'
+        assert sum(b.expected_share for b in p.buckets) == pytest.approx(1, abs=1e-3)
+    assert [p.name for p in validation.psi_features] == [f.name for f in trained.scorecard.features]
+    assert len(validation.psi_points.buckets) == 10
+
+
+def test_validation_needs_only_the_contracts():
+    # The API can read the report for the risk-manager page (T32) without the world.
+    code = 'import sys, apps.ml.validation; assert not any(m.startswith("apps.world") for m in sys.modules)'
+    subprocess.run([sys.executable, '-c', code], check=True, cwd=ML.parents[1])
+
+
 # --- The committed scorecard --------------------------------------------------------
 
 def test_scoring_needs_only_the_contracts():
@@ -163,6 +248,6 @@ def test_committed_scorecard_matches_the_current_features():
 def test_committed_scorecard_is_what_training_gives(tmp_path):
     committed = Scorecard.model_validate_json((ML / 'scorecard_v1.json').read_text('utf-8'))
     main(['--out', str(tmp_path), '--created-at', committed.created_at.isoformat()])
-    for name in ('scorecard_v1.json', 'scorecard_v1.training.json'):
+    for name in ('scorecard_v1.json', 'scorecard_v1.training.json', 'scorecard_v1.validation.json'):
         assert (tmp_path / name).read_text('utf-8') == (ML / name).read_text('utf-8'), \
             f'{name} is stale: retrain with `python -m apps.ml`'

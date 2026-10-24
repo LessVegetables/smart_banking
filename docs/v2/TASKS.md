@@ -26,6 +26,7 @@ What we build and why: [SPEC.md](SPEC.md) (in Russian). Contracts between tracks
 | 2026-10-24 | Feature-library policy is in `config/features.json` (T08): overdue-rule thresholds, inquiry and change windows, ОКВЭД risk groups. Its `version` is the feature-set version; changing it means retraining. The econ team owns the values. |
 | 2026-10-24 | Scorecard training lives in `apps/ml/` (T10). The trained card is `apps/ml/scorecard_v1.json`; its `feature_set_version` and training data are in `scorecard_v1.training.json`, because the `Scorecard` contract has no field for them. The card trains on every company of the world's training sample, with no reject inference. |
 | 2026-10-24 | Data-quality thresholds are in `config/data_quality.json` (T09), separate from `config/features.json`: changing them doesn't change features or require retraining. Its `version` is `DataQuality.policy_version`. The econ team owns the values. |
+| 2026-10-24 | Scorecard validation (T11) is `apps/ml/scorecard_v1.validation.json`, regenerated with the card by `python -m apps.ml`. PSI compares the holdout with the training sample: the world is one snapshot, so there is no later population. PSI thresholds 0.1 / 0.25 and 95% intervals are conventional and live in `apps/ml/validation.py`; the econ team confirms them. |
 
 ## Open questions
 
@@ -71,7 +72,7 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 | T08 | Shared feature-extraction library, used by training **and** the live engine; includes the MVP overdue rules | M | T00 | done | PR #9 |
 | T09 | Account data-quality metrics and tier `FULL` / `PARTIAL` / `THIN` (SPEC §5.1) | S | T08 | done | PR #11 |
 | T10 | Scorecard training: WoE binning, logistic regression, points scaling, export `scorecard_v1.json` | M | T05, T08 | done | PR #10 |
-| T11 | Validation metrics: Gini on holdout, calibration by grade, PSI → JSON for the UI | S | T10 | todo | |
+| T11 | Validation metrics: Gini on holdout, calibration by grade, PSI → JSON for the UI | S | T10 | done | PR #13 |
 | T12 | Demo personas picked from the world (one per outcome, ИП and ООО, fraud, each data-quality tier) + expected-outcomes table with the econ team | S | T05, T18 | todo | |
 
 ### Track 2 — Engine & workflow
