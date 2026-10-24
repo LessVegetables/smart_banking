@@ -134,7 +134,7 @@ def test_transition_writes_an_audit_event_and_refuses_illegal_moves(world):
 
 def test_every_outcome_is_reachable_and_consistent(outcomes):
     statuses = {d.status for *_, d in outcomes}
-    assert {S.OFFERED, S.DECLINED, S.IN_REVIEW} <= statuses
+    assert {S.OFFERED, S.DECLINED, S.IN_REVIEW, S.NEEDS_DATA} <= statuses
     for _, request, d in outcomes:
         assert d.application_id == request.application_id
         assert d.policy_version == 'credit=credit_policy_v0;data_quality=data_quality_v0;features=features_v0'
@@ -146,8 +146,9 @@ def test_every_outcome_is_reachable_and_consistent(outcomes):
             assert d.status == S.DECLINED and d.score is None and d.route_reasons[0].code == 'route_stop_factor'
         if d.status == S.DECLINED and not d.stop_factors:
             assert d.score and d.reapply_after == NOW.date() + timedelta(days=90) and d.reasons
-        if d.data_quality.tier == c.DataQualityTier.THIN and not d.stop_factors:
-            assert d.status == S.IN_REVIEW and 'route_data_thin' in {r.code for r in d.route_reasons}
+        if d.data_quality.tier == c.DataQualityTier.THIN and not d.stop_factors:  # a data request first (T23)
+            assert d.status == S.NEEDS_DATA and d.requested_documents and not d.offers and d.score
+            assert 'route_data_thin' in {r.code for r in d.route_reasons}
         if d.score:
             assert d.challenger is not None and d.model_version == d.score.model_version
 

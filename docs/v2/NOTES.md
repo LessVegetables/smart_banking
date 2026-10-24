@@ -21,6 +21,7 @@ Everything one task leaves for another lives here, filed under the task that has
 - Few young companies: about 4% are under 6 months, 13% under a year. If personas need more, shift the age distribution in `_company` (`apps/world/`) or add a young-company group. (from T04)
 - Every archetype has candidates among both ИП and ООО; the shell archetype is ООО only. (from T04)
 - Expected grades come from `apps/ml/scorecard_v1.json`. Retraining it (any change to `config/features.json`, `config/world_outcomes.json` or the world) moves persona grades, so the expected-outcomes table must be regenerated with it. (from T10)
+- The demo needs a statement file for the `PARTIAL` and `THIN` personas (format in `apps/api/STATEMENTS.md`). Only the world knows what runs through other banks: generate one per persona from it (`main_bank_elsewhere`: the other `1 - our_share` of the operations; `new_account`: the months before the account was opened) and ship it with the demo. Track 1 owns `apps/world/`. (from T23)
 - Per-persona source failures (e.g. ФССП down) go in `MOCK_SOURCES_SCENARIOS`; the world doesn't change. For sampling without latency use `payload(company, source)`. (from T06/T07, `apps/sources/README.md`)
 
 ## T15 — scoring adapter
@@ -28,13 +29,6 @@ Everything one task leaves for another lives here, filed under the task that has
 - T14 emits `source_unavailable_fns`, `source_unavailable_fssp` and `source_unavailable_arbitration` flags. Apply a score penalty for each degraded source after the econ team defines penalty values; no such values exist in the current policy. (`apps/api/stop_factors.py`)
   - Not handled in T15: the values belong in `config/` (shared-folder PR, econ team). Then apply them in `Scorer.score` (`apps/api/scoring.py`) and show each penalty as its own row in `ScoreResult.contributions`, so points still add up. (T15)
 
-
-## T23 — statement upload
-
-- `cash_flow` (`apps/api/limits.py`) reads only our own account. For an uploaded statement to raise the limit (SPEC §5.1), decide how its operating flow joins ours, then recompute through `cash_flow` with the recomputed tier. (from T16)
-- `data_quality` reads only our own account statement. Decide how an uploaded statement changes the metrics (most likely coverage: add its operating inflows to ours, at the lower trust level) and recompute through the same function. (from T09)
-- Staff `request_data` (T20, `apps/api/staff_actions.py`) already moves `in_review → needs_data` with `Decision.requested_documents`; nothing moves the application on from there yet. The upload should go `needs_data → enriching` and re-run the engine. (from T20)
-- `THIN` goes to `in_review` (`route_data_thin`) as a `# SIMPLIFICATION:` in `decide` (`apps/api/workflow.py`). With uploads, return status `needs_data` with `requested_documents` instead, and after the upload move `needs_data → enriching` and recompute; `run_application` expects a claimed `enriching` application, so add a claim path for it. (from T18, T19)
 
 ## T25 — ИНН entry and consents
 
@@ -57,6 +51,7 @@ Everything one task leaves for another lives here, filed under the task that has
 - `Offer.tradeoff` and `Counterfactual.client_text` are ready to show; `reasons[].client_text` names the binding limit. For `THIN` there's no cash-flow counterfactual (no cash-flow limit at all): show `DataQuality.client_message` as the "how to get more" hint. `rate_above_cap` / `limit_below_product_minimum` reasons explain a decline, `reapply_after` says when to come back. (from T17, `apps/api/OFFERS.md`)
 - Several `route_reasons` can carry the same `client_text` ("Заявку проверит специалист банка…"): show distinct texts once. Data-quality route reasons carry `DataQuality.client_message`. (from T18, `apps/api/ROUTING.md`)
 - The client gets `client_decision(...)` (`apps/api/workflow.py`), not the raw `Decision`: `route_messages` and `reasons` are distinct client texts, offers without `expected_profit`, no flags, score or challenger. Accept with `POST /api/v2/applications/{id}/accept` `{"offer_id", "revision"}`; 409 with `expired` when the offer ran out. (from T19)
+- `needs_data`: show `decision.requested_documents` and `DataQuality.client_message`, upload with `POST /api/v2/applications/{id}/statements` (`multipart/form-data`: `files`, `revision`; 422 = text to show as is) or go on with `.../statements/skip`. Uploaded files are in `statements` of the application. A `PARTIAL` client with automatic offers can't upload (no `offered → enriching` in SPEC §13): the "выписка поможет увеличить лимит" hint means a new application. The re-run after an upload reuses the sources, so it writes no `source` events for the "analyzing" screen (T27). (from T23, `apps/api/STATEMENTS.md`)
 
 ## T29 — signing → disbursed, pre-approval banner
 
@@ -71,6 +66,7 @@ Everything one task leaves for another lives here, filed under the task that has
 - Our own БКИ request doesn't appear in the report. If the dossier should show it, ask track 1 to add it in the БКИ adapter (`apps/sources/`). (from T06)
 - "Почему заявка пришла сюда" is `Decision.route_reasons[].staff_text`, one row per condition; the code says which matrix row fired (`apps/api/ROUTING.md`). `Decision` doesn't store each reason's own route (`Routing.routes` does): derive it from the code table if the dossier needs it. (from T18)
 - Staff actions are in the audit log as `review`, `proposal` and `signature` events with the reason code, comment, position and `override`; `pending_review` is a committee decision waiting for its second signature (`apps/api/STAFF_ACTIONS.md`). Staff reasons are `Decision.reasons` with code `staff_<reason code>`. (from T20)
+- Statements (T23): `statements` in the staff view (parsed months, file name, SHA-256), facts with source `statement_upload` / `client_document` next to our account's, flags `statement_period` and `statement_inflows_above_fns`, route reason `route_statement_upload`. `DataQuality` is with the statements; the tier on our account alone is `own_account_tier` in the run's `action` event. (from T23, `apps/api/STATEMENTS.md`)
 - `GET /api/v2/applications/{id}` as staff returns `decision`, `data_quality`, `sources` (envelope per source: status, timestamps, latency, attempts, error), `facts` (fact store) and the full `events`; `GET .../events` is the audit log alone (`apps/api/WORKFLOW.md`). Full source payloads are in `LoanApplication.enrichment` if the dossier needs them. (from T19)
 - Signing, conditions and payout are `closing` in the staff view: `signature`, `conditions[].detail` (pledge registration number, invoice check, failure reason), `payout` (account or supplier, payment id). Code issues, wrong codes and condition checks are `action` events in the audit log (`apps/api/DISBURSEMENT.md`). (from T21)
 
@@ -101,6 +97,7 @@ Everything one task leaves for another lives here, filed under the task that has
 ## T35 — docs
 
 - The simplification registry should take the T21 list from `apps/api/DISBURSEMENT.md`, «Упрощения»: code shown on screen instead of SMS, one code signs the guarantee too, mock pledge registry / supplier invoice / МСП guarantee, payout without real postings. (from T21)
+- Simplification registry: statement upload has no recognition (`# MOCK:`, the file is already parsed JSON), transfers between our account and the other bank aren't netted, the statement's authenticity isn't checked, check thresholds are code constants (`apps/api/STATEMENTS.md`, «Упрощения»). (from T23)
 
 ## T36 — policy simulator
 
@@ -122,3 +119,6 @@ Everything one task leaves for another lives here, filed under the task that has
 - Staff can't approve more than the computed limit: `Offer` requires `amount <= limit.limit`, so `change` refuses it (422). If underwriters should be able to go above the limit with a reason code, that needs a contract change (e.g. an override field on `Offer` or `LimitBreakdown`). (from T20)
 - A failed pre-disbursement condition (today only a supplier invoice that doesn't match the loan) leaves the application in `conditions` for good: `TRANSITIONS` has only `conditions → disbursed`, and no staff or back-office action exists (SPEC §12 calls back office optional). Decide on a path (staff fixes and re-checks, or `conditions → declined` / `withdrawn`), then add it in `apps/api/disbursement.py`. (from T21)
 - Signing has no deadline: documents can be signed after the offer's `valid_until`, and there's no `documents → expired` transition. If the bank wants one, add it to `TRANSITIONS` and check it in `disbursement.sign`. (from T21)
+- The uploaded statement format (`Statement` in `apps/api/statements.py`: bank, ИНН, `MonthlyTurnover` months) is a client → pipeline exchange but not a contract. Proposed: a shared-folder PR moving it into `apps/api/contracts.py` with a fixture in `tests/fixtures/`. (from T23)
+- Statement policy is `# SIMPLIFICATION:` constants in `apps/api/statements.py`: `STALE_MONTHS = 3`, `FNS_EXCESS = 0.30`, `MAX_FILES = 5`, `MAX_FILE_BYTES`. Proposed: a shared-folder PR adding them to `config/data_quality.json` (econ team owns the values). (from T23)
+- An application in `needs_data` waits for the client forever: SPEC §13 has no timeout for it, only `withdrawn`. If a data request should expire (e.g. after the 10 days an offer lasts), agree the term and add the transition. (from T23)

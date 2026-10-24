@@ -10,7 +10,7 @@ from urllib.parse import parse_qsl
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, Request, Response, HTTPException, UploadFile, File, Depends, Query
+from fastapi import FastAPI, Request, Response, HTTPException, UploadFile, File, Form, Depends, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ConfigDict, ValidationError
@@ -26,7 +26,7 @@ from .worker import loop, event, save_decision
 from .storage import storage
 from .assistant import explain
 from .contracts import CollateralType, ProductId
-from . import disbursement, preapproval, staff_actions, workflow
+from . import disbursement, preapproval, staff_actions, statements, workflow
 
 DEMO=os.environ.get('DEMO_MODE','true').lower()=='true'
 COOKIE_SECURE=os.environ.get('COOKIE_SECURE','false').lower()=='true'
@@ -413,6 +413,24 @@ def sign_documents_v2(id:str,body:V2SignCode,user=Depends(current_user),db=Depen
     # A response, not an exception: the used-up attempt must commit.
     if error:return JSONResponse(status_code=422,content={'detail':error,'revision':a.revision})
     return workflow.application_json(db,a,staff=False)
+
+# --- v2 statements from other banks (T23): the answer to a data request (needs_data) ---
+@app.post('/api/v2/applications/{id}/statements')
+async def statements_v2(id:str,files:list[UploadFile]=File(...),revision:int=Form(...),user=Depends(current_user),db=Depends(db_session)):
+    a=client_v2(db,id,user,revision)
+    if len(files)>statements.MAX_FILES:raise HTTPException(422,f'Можно загрузить не больше {statements.MAX_FILES} выписок')
+    parts=[(Path(f.filename or 'statement').name[:200],await f.read(statements.MAX_FILE_BYTES+1)) for f in files]
+    try:workflow.upload_statements(db,a,parts,actor=workflow.actor_of(user))
+    except workflow.IllegalTransition as e:raise HTTPException(409,str(e))
+    except statements.StatementError as e:raise HTTPException(422,str(e))
+    db.flush();return workflow.application_json(db,a,staff=False)
+
+@app.post('/api/v2/applications/{id}/statements/skip')
+def skip_statements_v2(id:str,body:V2Revision,user=Depends(current_user),db=Depends(db_session)):
+    a=client_v2(db,id,user,body.revision)
+    try:workflow.skip_statements(db,a,actor=workflow.actor_of(user))
+    except workflow.IllegalTransition as e:raise HTTPException(409,str(e))
+    db.flush();return workflow.application_json(db,a,staff=False)
 
 # --- v2 staff actions (T20): review with a reason code, committee with two signatures ---
 class V2OfferChange(Input):
