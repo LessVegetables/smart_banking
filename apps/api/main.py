@@ -10,7 +10,7 @@ from urllib.parse import parse_qsl
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, Request, Response, HTTPException, UploadFile, File, Depends
+from fastapi import FastAPI, Request, Response, HTTPException, UploadFile, File, Depends, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ConfigDict, ValidationError
@@ -26,7 +26,7 @@ from .worker import loop, event, save_decision
 from .storage import storage
 from .assistant import explain
 from .contracts import CollateralType, ProductId
-from . import disbursement, staff_actions, workflow
+from . import disbursement, preapproval, staff_actions, workflow
 
 DEMO=os.environ.get('DEMO_MODE','true').lower()=='true'
 COOKIE_SECURE=os.environ.get('COOKIE_SECURE','false').lower()=='true'
@@ -455,6 +455,19 @@ def sign_v2(id:str,body:V2Sign,user=Depends(staff),db=Depends(db_session)):
     return staff_action(a,db,lambda:staff_actions.sign(db,a,staff_actions.staff_of(user),approve=body.approve,comment=body.comment,reason_code=body.reason_code))
 
 class Message(Input):message:str=Field(min_length=1,max_length=1000);question_id:str|None=None;application_id:str|None=None
+# --- v2 overdraft pre-approval (T22): the nightly batch's "Вам доступно до X" ---
+@app.get('/api/v2/preapproval')
+def preapproval_v2(inn:str=Query(pattern=r'^\d{10}(\d{2})?$'),user=Depends(current_user)):
+    # SIMPLIFICATION: any logged-in client can ask for any ИНН, as with submitting: there is no user → company link yet (T25).
+    result=preapproval.latest(inn)
+    if result is None:return None
+    return result.model_dump(mode='json') if user.role=='staff' else result.client_view()
+
+@app.post('/api/v2/staff/preapproval/run',status_code=202)
+def preapproval_run_v2(user=Depends(staff)):
+    last=preapproval.last_run()
+    return {'started':preapproval.start_batch(),'last_run':last.isoformat() if last else None}
+
 @app.post('/api/assistant/messages')
 def assistant(body:Message,user=Depends(current_user),db=Depends(db_session)):
     # Complete offline fallback: no model key and no fabricated credit decision.

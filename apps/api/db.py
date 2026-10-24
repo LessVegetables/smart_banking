@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import create_engine, String, Integer, JSON, Float, ForeignKey, UniqueConstraint, inspect
+from sqlalchemy import create_engine, Boolean, String, Integer, JSON, Float, ForeignKey, UniqueConstraint, inspect
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 DATA=Path(os.environ.get('DATA_DIR','data')).resolve(); DATA.mkdir(parents=True,exist_ok=True)
@@ -102,6 +102,15 @@ class ApplicationFact(Base):
     trust_level:Mapped[str]=mapped_column(String)
     fetched_at:Mapped[str|None]=mapped_column(String,nullable=True)
     discrepancy:Mapped[float|None]=mapped_column(Float,nullable=True)
+class PreApprovalRow(Base):
+    """The latest overdraft pre-approval per client (T22), replaced by each batch; `result` is `preapproval.PreApproval`."""
+    __tablename__='preapprovals'
+    inn:Mapped[str]=mapped_column(String,primary_key=True)
+    approved:Mapped[bool]=mapped_column(Boolean)
+    amount:Mapped[int|None]=mapped_column(Integer,nullable=True)
+    computed_at:Mapped[str]=mapped_column(String,index=True)
+    valid_until:Mapped[str|None]=mapped_column(String,nullable=True)  # ISO date
+    result:Mapped[dict]=mapped_column(JSON)
 class SubmissionKey(Base):
     __tablename__='submission_keys'
     key:Mapped[str]=mapped_column(String,primary_key=True)

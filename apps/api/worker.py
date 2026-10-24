@@ -38,7 +38,7 @@ def run_once():
     return True
 
 def loop(stop):
-    from . import disbursement, workflow
+    from . import disbursement, preapproval, workflow
     while not stop.wait(0.5):
         # Recover a worker crash after the lease expires.
         with Session.begin() as db:
@@ -48,6 +48,8 @@ def loop(stop):
         except Exception:workflow.log.exception('workflow tick failed')
         try:disbursement.tick()  # conditions -> disbursed (T21)
         except Exception:disbursement.log.exception('disbursement tick failed')
+        try:preapproval.tick()  # the overdraft pre-approval batch (T22), in its own thread once a day
+        except Exception:preapproval.log.exception('pre-approval tick failed')
 
 if __name__=='__main__':
     import threading
