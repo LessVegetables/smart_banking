@@ -10,7 +10,7 @@
 Every component is rounded to 4 decimals and the rate is their sum, so the staff see
 components that add up. PD and grade come from the champion `ScoreResult`, never from the
 shadow challenger (SCORING.md). The rate cap is checked here; what to do above it
-(offer collateral or decline, SPEC §9.2) is the offer generator's call (T17).
+(offer collateral or decline, SPEC §9.2) is the offer generator's call (T17, offers.py).
 """
 from __future__ import annotations
 

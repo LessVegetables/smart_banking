@@ -28,22 +28,17 @@ Everything one task leaves for another lives here, filed under the task that has
 - T14 emits `source_unavailable_fns`, `source_unavailable_fssp` and `source_unavailable_arbitration` flags. Apply a score penalty for each degraded source after the econ team defines penalty values; no such values exist in the current policy. (`apps/api/stop_factors.py`)
   - Not handled in T15: the values belong in `config/` (shared-folder PR, econ team). Then apply them in `Scorer.score` (`apps/api/scoring.py`) and show each penalty as its own row in `ScoreResult.contributions`, so points still add up. (T15)
 
-## T17 — offers and counterfactuals
-
-- Build each variant with `quote(cash_flow, score, product, term, route, collateral, requested, equipment)` (`apps/api/limits.py`, `apps/api/LIMITS.md`) and copy `limit`, `price`, `monthly_payment`, `guarantee_fee`, `expected_profit` into the `Offer`. `amount == 0` or `below_product_minimum` → not offerable; `within_cap == False` → try collateral (it lowers LGD) or decline (SPEC §9.2). (from T16)
-- T16 picks no collateral: choose it per product and legal form (owner guarantee is standard for ООО working capital, equipment pledge for the investment loan, SPEC §3–4). "Longer term": call `quote(requested=amount)` over the product's terms until `quote.amount == amount`. (from T16)
-- Counterfactuals: re-run `quote` on a changed `CashFlow` (`dataclasses.replace(cf, current_payments=0)` gives the fixture's "without the current loan" hint). The credit line's 1% fee on the unused limit (SPEC §4) is in neither the rate nor `Offer`: show it in `tradeoff`. (from T16)
-
 ## T18 — routing
 
-- Pricing needs the route of each offer's amount: the processing cost in `quote(route=...)` (`apps/api/limits.py`) is 3k / 25k / 60k ₽ by route. Expose routing of a given amount (grade, flags, tier, amount) so T17 can price each offer with its own route. (from T16)
+- Pricing needs the route of each offer's amount: the processing cost in `quote(route=...)` (`apps/api/limits.py`) is 3k / 25k / 60k ₽ by route. Expose routing of a given amount (grade, flags, tier, amount) so T19 can pass it to `generate_offers(..., route_for=...)` (`apps/api/offers.py`) as `amount -> Route`. (from T16, T17)
 - Grade comes from the same `ScoreResult` as T16 (`apps/api/scoring.py`); the challenger's grade must not affect the route. (from T15)
 - Route on `DataQuality.tier` from the same call as T16 (`apps/api/features/data_quality.py`); the reason to show is in `client_message`, and each metric's tier tells the underwriter which one failed. (from T09)
 - Every flag returned by T14 requires staff review under SPEC §7; preserve its reason code and staff/client wording in route reasons. (`apps/api/stop_factors.py`)
 
 ## T19 — state machine
 
-- After scoring, call `cash_flow_from_responses(enrichment.responses, data_quality)` (`apps/api/limits.py`) once and pass it to T17. It raises `ValueError` without БКИ, which can't happen after the "source unavailable" route. `Decision.policy_version` is one string, but there are now three policy versions (`credit_policy_v0`, `DataQuality.policy_version`, the feature set): decide how to combine them, or propose a contract field. (from T16)
+- After scoring, call `cash_flow_from_responses(enrichment.responses, data_quality)` (`apps/api/limits.py`) once and pass it to `generate_offers(request, cash_flow, score, route_for, as_of)` (`apps/api/offers.py`, `apps/api/OFFERS.md`). It raises `ValueError` without БКИ, which can't happen after the "source unavailable" route. `Decision.policy_version` is one string, but there are now three policy versions (`credit_policy_v0`, `DataQuality.policy_version`, the feature set): decide how to combine them, or propose a contract field. (from T16)
+- Build the `Decision` from `OfferSet`: `offers`, `counterfactuals`, `reasons`, `matches_request`, `reapply_after`; status `offered` with offers, otherwise `declined` or `in_review` by route. Offers of one application can sit on different routes (`OfferSet.routes`, e.g. 1M → underwriter, 730k → auto) while `Decision.route` is one value: decide which one the application takes (probably the as-requested or first offer's route; a staff review then covers all). (from T17)
 - After stop factors (none fired), call `score(features, application_id)` from `apps/api/scoring.py` once and store `Scoring.score`, `Scoring.challenger` and `score.model_version` in the `Decision`. `FeatureSetMismatch` means the card doesn't fit the features: route to the underwriter with a reason, don't decline. (from T15, `apps/api/SCORING.md`)
 - Persist completed `Enrichment.facts` through `apps/api/fact_store.py` in the application workflow transaction; T13 provides the store, but no workflow calls it yet. (from T13)
 - Features need an `as_of`: `features_from_responses` takes the day the sources answered. The mock world is frozen at `WORLD_AS_OF` (default 2026-10-01), so the further today is from it, the more business age, episode ages and the 3-month inquiry window drift from the world's data. Decide which date the demo pipeline passes (probably the world's `as_of`). (from T08)
@@ -65,9 +60,17 @@ Everything one task leaves for another lives here, filed under the task that has
 - Collect both 218-ФЗ consents: `bki_company` with the company's ИНН and `bki_owner` with the main owner's ИНН (for ИП: the entrepreneur's ИНН). Without them БКИ isn't queried and the application can't go past the underwriter. (from T07)
 - ИНН/ОГРН in `tests/fixtures/` fail checksum validation; generated ones pass. If the UI validates checksums, fix the fixtures through a shared-folder PR. (from T01)
 
+## T26 — need intake
+
+- The product recommendation must use the same purpose → product mapping as the offer generator: `PURPOSE_PRODUCT` in `apps/api/offers.py` (cash gap → overdraft, seasonal gap / contract → credit line, equipment → investment, else working capital). Otherwise the client gets an "other product" offer for the product the intake itself recommended. (from T17)
+
 ## T27 — "analyzing" screen
 
 - Use `enrich(..., on_event=handler)`: `SourceEvent(source, attempt, status, final, error)`. The mock service's HTTP router isn't mounted in `apps/api/main.py`; the orchestrator calls the service in-process by default. (from T06/T07)
+
+## T28 — offer menu
+
+- `Offer.tradeoff` and `Counterfactual.client_text` are ready to show; `reasons[].client_text` names the binding limit. For `THIN` there's no cash-flow counterfactual (no cash-flow limit at all): show `DataQuality.client_message` as the "how to get more" hint. `rate_above_cap` / `limit_below_product_minimum` reasons explain a decline, `reapply_after` says when to come back. (from T17, `apps/api/OFFERS.md`)
 
 ## T30 — staff dossier
 
@@ -81,6 +84,10 @@ Everything one task leaves for another lives here, filed under the task that has
 - The page shows `apps/ml/scorecard_v1.validation.json`, regenerated by `python -m apps.ml` with the card. Format: `ValidationReport` in `apps/ml/validation.py` (imports only the contracts, so the API can load it without the world). No API endpoint serves it yet: add a read-only GET in `apps/api/` (agree with track 2). (from T11, `apps/ml/README.md`, «Валидация»)
 - Show `limitations` next to the metrics, and the true-PD ceiling next to the holdout Gini. `predicted_vs_actual: below` means the card underestimates risk in that grade (grade C now). (from T11)
 - `ValidationReport` is not a contract. If the UI wants generated types for it, propose a shared-folder PR moving it into `apps/api/contracts.py`. (from T11)
+
+## T33 — golden tests
+
+- Expected offer sets per persona come from `generate_offers` (`apps/api/offers.py`). The fixture `decision_offered.json` says 890k for the "without the current loan" hint; the engine gives 900k because it re-prices the new amount. Use engine numbers in the expected-outcomes table, not the fixture's. (from T17)
 
 ## T34 — Docker
 
@@ -97,3 +104,6 @@ Everything one task leaves for another lives here, filed under the task that has
 - PSI on the live application flow (model monitoring) has no task. T11's PSI compares the holdout with the training sample, so it is ≈ 0 by construction. Once applications are stored (T19), `psi(...)` from `apps/ml/validation.py` can compare their grades and card features with the training sample. (from T11)
 - SPEC §7 includes a flag when the ОКВЭД does not match the application purpose, but defines no purpose-to-ОКВЭД mapping. Agree and configure that policy before implementing the flag in `apps/api/stop_factors.py`.
 - The `Scorecard` contract has no `feature_set_version`, so the scoring adapter reads it from a passport next to the card (`scorecard_vN.training.json`, also for the hand-set `scorecard_v0`). Proposed: a shared-folder PR adding `feature_set_version` to `Scorecard`; then `load_scorecard_model` (`apps/api/scoring.py`) reads it from the card. (from T10, T15)
+- Offer policy is hard-coded in `apps/api/offers.py` as `# SIMPLIFICATION:` constants: `MAX_OFFERS = 3`, `OFFER_VALID_DAYS = 10`, `REAPPLY_AFTER_DAYS = 90`, `CREDIT_LINE_UNUSED_FEE = 0.01`, `PURPOSE_PRODUCT`. Proposed: a shared-folder PR adding an `offers` block to `config/credit_policy.json` and `CreditPolicy` (econ team owns the values), then read them from the policy. (from T17)
+- `decision_offered.json` has the "without the current loan" counterfactual at 890k with `resulting_rate: null`; the engine gives 900k at 20.61%. Optional shared-folder PR to bring the fixture and `CONTRACTS.md` in line with `generate_offers`. (from T17)
+- Reapply date after an economic decline is the same 90 days for every reason. Per-reason dates (THIN: when history reaches the `FULL` bound; leverage: when the loan closes) need policy values from the econ team. (from T17)
