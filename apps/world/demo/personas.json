@@ -1,0 +1,944 @@
+{
+  "world": {
+    "seed": 42,
+    "n": 5000,
+    "as_of": "2026-10-01",
+    "generator_version": "world-t12-1"
+  },
+  "scorecard": "scorecard_v1",
+  "policy_version": "credit=credit_policy_v0;data_quality=data_quality_v0;features=features_v0",
+  "decided_at": "2026-10-24T10:15:00+03:00",
+  "personas": [
+    {
+      "persona_id": "auto_ooo",
+      "title": "ООО: автоматическое одобрение",
+      "story": "Полные данные по счёту, грейд A–C, флагов нет: предложения сразу, без сотрудника. У этой же компании есть предодобренный овердрафт (баннер T29).",
+      "company_id": "C00191",
+      "inn": "6163001918",
+      "legal_form": "ooo",
+      "archetype": "regular",
+      "request": {
+        "inn": "6163001918",
+        "legal_form": "ooo",
+        "purpose": "inventory",
+        "amount": 3450000,
+        "term_months": 12,
+        "needed_by": "month",
+        "preferred_product": null,
+        "declared_annual_revenue": 66000000,
+        "equipment": null,
+        "consents": [
+          {
+            "kind": "bki_company",
+            "subject_inn": "6163001918",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "bki_owner",
+            "subject_inn": "616330114659",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "personal_data",
+            "subject_inn": "616330114659",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          }
+        ]
+      },
+      "scenarios": {},
+      "statement_file": null,
+      "expected": {
+        "status": "offered",
+        "route": "auto",
+        "route_reasons": [
+          "route_auto"
+        ],
+        "data_quality_tier": "FULL",
+        "grade": "A",
+        "stop_factors": [],
+        "flags": [],
+        "reasons": [],
+        "matches_request": true,
+        "offers": [
+          {
+            "kind": "as_requested",
+            "product": "working_capital",
+            "amount": 3450000,
+            "term_months": 12,
+            "rate": 0.1932,
+            "collateral": [
+              "owner_guarantee"
+            ]
+          }
+        ],
+        "requested_documents": 0
+      },
+      "expected_after_statement": null,
+      "preapproval": {
+        "approved": true,
+        "amount": 2820000,
+        "rate": 0.1938,
+        "reasons": [
+          "preapproval_limit_turnover"
+        ]
+      }
+    },
+    {
+      "persona_id": "auto_ip",
+      "title": "ИП: автоматическое одобрение",
+      "story": "Предприниматель с полными данными: оборотный кредит на запрошенных условиях, решение сразу.",
+      "company_id": "C00714",
+      "inn": "165500071419",
+      "legal_form": "ip",
+      "archetype": "regular",
+      "request": {
+        "inn": "165500071419",
+        "legal_form": "ip",
+        "purpose": "inventory",
+        "amount": 950000,
+        "term_months": 12,
+        "needed_by": "month",
+        "preferred_product": null,
+        "declared_annual_revenue": 18000000,
+        "equipment": null,
+        "consents": [
+          {
+            "kind": "bki_owner",
+            "subject_inn": "165500071419",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "personal_data",
+            "subject_inn": "165500071419",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          }
+        ]
+      },
+      "scenarios": {},
+      "statement_file": null,
+      "expected": {
+        "status": "offered",
+        "route": "auto",
+        "route_reasons": [
+          "route_auto"
+        ],
+        "data_quality_tier": "FULL",
+        "grade": "A",
+        "stop_factors": [],
+        "flags": [],
+        "reasons": [],
+        "matches_request": true,
+        "offers": [
+          {
+            "kind": "as_requested",
+            "product": "working_capital",
+            "amount": 950000,
+            "term_months": 12,
+            "rate": 0.2009,
+            "collateral": []
+          }
+        ],
+        "requested_documents": 0
+      },
+      "expected_after_statement": null,
+      "preapproval": null
+    },
+    {
+      "persona_id": "counter_offer",
+      "title": "Набор предложений вместо запрошенного",
+      "story": "Запрошенная сумма больше лимита: клиент видит, что доступно (меньше сумма, дольше срок или другой продукт), и почему.",
+      "company_id": "C00055",
+      "inn": "631700005555",
+      "legal_form": "ip",
+      "archetype": "regular",
+      "request": {
+        "inn": "631700005555",
+        "legal_form": "ip",
+        "purpose": "inventory",
+        "amount": 3000000,
+        "term_months": 12,
+        "needed_by": "month",
+        "preferred_product": null,
+        "declared_annual_revenue": 31000000,
+        "equipment": null,
+        "consents": [
+          {
+            "kind": "bki_owner",
+            "subject_inn": "631700005555",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "personal_data",
+            "subject_inn": "631700005555",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          }
+        ]
+      },
+      "scenarios": {},
+      "statement_file": null,
+      "expected": {
+        "status": "offered",
+        "route": "auto",
+        "route_reasons": [
+          "route_auto"
+        ],
+        "data_quality_tier": "FULL",
+        "grade": "B",
+        "stop_factors": [],
+        "flags": [],
+        "reasons": [
+          "limit_cash_flow"
+        ],
+        "matches_request": false,
+        "offers": [
+          {
+            "kind": "max_amount",
+            "product": "working_capital",
+            "amount": 670000,
+            "term_months": 12,
+            "rate": 0.2174,
+            "collateral": []
+          }
+        ],
+        "requested_documents": 0
+      },
+      "expected_after_statement": null,
+      "preapproval": null
+    },
+    {
+      "persona_id": "equipment",
+      "title": "Оборудование в залог",
+      "story": "Инвестиционный кредит на оборудование: залог оборудования и поручительство собственника, выдача поставщику.",
+      "company_id": "C00071",
+      "inn": "7715000717",
+      "legal_form": "ooo",
+      "archetype": "regular",
+      "request": {
+        "inn": "7715000717",
+        "legal_form": "ooo",
+        "purpose": "equipment",
+        "amount": 1610000,
+        "term_months": 36,
+        "needed_by": "month",
+        "preferred_product": "investment",
+        "declared_annual_revenue": 24000000,
+        "equipment": {
+          "description": "Производственное оборудование",
+          "price": 2300000,
+          "down_payment": 690000,
+          "supplier_inn": "7715999986"
+        },
+        "consents": [
+          {
+            "kind": "bki_company",
+            "subject_inn": "7715000717",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "bki_owner",
+            "subject_inn": "771530042643",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "personal_data",
+            "subject_inn": "771530042643",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          }
+        ]
+      },
+      "scenarios": {},
+      "statement_file": null,
+      "expected": {
+        "status": "offered",
+        "route": "auto",
+        "route_reasons": [
+          "route_auto"
+        ],
+        "data_quality_tier": "FULL",
+        "grade": "A",
+        "stop_factors": [],
+        "flags": [],
+        "reasons": [],
+        "matches_request": true,
+        "offers": [
+          {
+            "kind": "as_requested",
+            "product": "investment",
+            "amount": 1610000,
+            "term_months": 36,
+            "rate": 0.1941,
+            "collateral": [
+              "equipment_pledge",
+              "owner_guarantee"
+            ]
+          }
+        ],
+        "requested_documents": 0
+      },
+      "expected_after_statement": null,
+      "preapproval": null
+    },
+    {
+      "persona_id": "underwriter",
+      "title": "Андеррайтер: грейд D–E",
+      "story": "Скоринг ниже автоматической границы: заявка уходит андеррайтеру с готовым предложением под залог оборудования, он одобряет, меняет или отказывает (T20).",
+      "company_id": "C00009",
+      "inn": "770300000904",
+      "legal_form": "ip",
+      "archetype": "regular",
+      "request": {
+        "inn": "770300000904",
+        "legal_form": "ip",
+        "purpose": "equipment",
+        "amount": 560000,
+        "term_months": 36,
+        "needed_by": "month",
+        "preferred_product": "investment",
+        "declared_annual_revenue": 4300000,
+        "equipment": {
+          "description": "Производственное оборудование",
+          "price": 800000,
+          "down_payment": 240000,
+          "supplier_inn": "7703999981"
+        },
+        "consents": [
+          {
+            "kind": "bki_owner",
+            "subject_inn": "770300000904",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "personal_data",
+            "subject_inn": "770300000904",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          }
+        ]
+      },
+      "scenarios": {},
+      "statement_file": null,
+      "expected": {
+        "status": "in_review",
+        "route": "underwriter",
+        "route_reasons": [
+          "route_grade",
+          "route_flag_top_customer_concentration"
+        ],
+        "data_quality_tier": "FULL",
+        "grade": "E",
+        "stop_factors": [],
+        "flags": [
+          "top_customer_concentration"
+        ],
+        "reasons": [],
+        "matches_request": true,
+        "offers": [
+          {
+            "kind": "as_requested",
+            "product": "investment",
+            "amount": 560000,
+            "term_months": 36,
+            "rate": 0.2585,
+            "collateral": [
+              "equipment_pledge"
+            ]
+          }
+        ],
+        "requested_documents": 0
+      },
+      "expected_after_statement": null,
+      "preapproval": null
+    },
+    {
+      "persona_id": "committee",
+      "title": "Кредитный комитет",
+      "story": "Грейд D–E и сумма больше 5 млн ₽: маршрут комитета. Предложений нет (лимит по денежному потоку нулевой), поэтому сотрудник может только отказать или запросить данные.",
+      "company_id": "C00005",
+      "inn": "3664000050",
+      "legal_form": "ooo",
+      "archetype": "regular",
+      "request": {
+        "inn": "3664000050",
+        "legal_form": "ooo",
+        "purpose": "equipment",
+        "amount": 5600000,
+        "term_months": 36,
+        "needed_by": "month",
+        "preferred_product": "investment",
+        "declared_annual_revenue": 79000000,
+        "equipment": {
+          "description": "Производственное оборудование",
+          "price": 8000000,
+          "down_payment": 2400000,
+          "supplier_inn": "3664999988"
+        },
+        "consents": [
+          {
+            "kind": "bki_company",
+            "subject_inn": "3664000050",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "bki_owner",
+            "subject_inn": "366430003032",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "personal_data",
+            "subject_inn": "366430003032",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          }
+        ]
+      },
+      "scenarios": {},
+      "statement_file": null,
+      "expected": {
+        "status": "in_review",
+        "route": "committee",
+        "route_reasons": [
+          "route_amount_over_5m",
+          "route_grade_over_5m"
+        ],
+        "data_quality_tier": "FULL",
+        "grade": "D",
+        "stop_factors": [],
+        "flags": [],
+        "reasons": [
+          "limit_cash_flow",
+          "limit_below_product_minimum"
+        ],
+        "matches_request": null,
+        "offers": [],
+        "requested_documents": 0
+      },
+      "expected_after_statement": null,
+      "preapproval": null
+    },
+    {
+      "persona_id": "stop_factor",
+      "title": "Отказ по стоп-фактору",
+      "story": "Просрочка 90+ дней в кредитной истории за 24 месяца: автоматический отказ без скоринга.",
+      "company_id": "C00142",
+      "inn": "772700014292",
+      "legal_form": "ip",
+      "archetype": "regular",
+      "request": {
+        "inn": "772700014292",
+        "legal_form": "ip",
+        "purpose": "inventory",
+        "amount": 650000,
+        "term_months": 12,
+        "needed_by": "month",
+        "preferred_product": null,
+        "declared_annual_revenue": 16000000,
+        "equipment": null,
+        "consents": [
+          {
+            "kind": "bki_owner",
+            "subject_inn": "772700014292",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "personal_data",
+            "subject_inn": "772700014292",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          }
+        ]
+      },
+      "scenarios": {},
+      "statement_file": null,
+      "expected": {
+        "status": "declined",
+        "route": "auto",
+        "route_reasons": [
+          "route_stop_factor"
+        ],
+        "data_quality_tier": "FULL",
+        "grade": null,
+        "stop_factors": [
+          "bki_overdue_90_24m"
+        ],
+        "flags": [],
+        "reasons": [],
+        "matches_request": null,
+        "offers": [],
+        "requested_documents": 0
+      },
+      "expected_after_statement": null,
+      "preapproval": null
+    },
+    {
+      "persona_id": "economic_decline",
+      "title": "Отказ: бизнес не тянет платёж",
+      "story": "Стоп-факторов нет, но денежного потока не хватает даже на минимальную сумму продукта: отказ с объяснением и датой повторной заявки.",
+      "company_id": "C00002",
+      "inn": "5074000029",
+      "legal_form": "ooo",
+      "archetype": "regular",
+      "request": {
+        "inn": "5074000029",
+        "legal_form": "ooo",
+        "purpose": "inventory",
+        "amount": 1750000,
+        "term_months": 12,
+        "needed_by": "month",
+        "preferred_product": null,
+        "declared_annual_revenue": 34000000,
+        "equipment": null,
+        "consents": [
+          {
+            "kind": "bki_company",
+            "subject_inn": "5074000029",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "bki_owner",
+            "subject_inn": "507430001228",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "personal_data",
+            "subject_inn": "507430001228",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          }
+        ]
+      },
+      "scenarios": {},
+      "statement_file": null,
+      "expected": {
+        "status": "declined",
+        "route": "auto",
+        "route_reasons": [
+          "route_auto"
+        ],
+        "data_quality_tier": "FULL",
+        "grade": "C",
+        "stop_factors": [],
+        "flags": [],
+        "reasons": [
+          "limit_cash_flow",
+          "limit_below_product_minimum"
+        ],
+        "matches_request": null,
+        "offers": [],
+        "requested_documents": 0
+      },
+      "expected_after_statement": null,
+      "preapproval": null
+    },
+    {
+      "persona_id": "shell",
+      "title": "Мошенничество: «техническая» компания",
+      "story": "Транзитные обороты, массовый адрес, почти нет налогов: флаг 115-ФЗ, заявку смотрит андеррайтер.",
+      "company_id": "C00090",
+      "inn": "5074000903",
+      "legal_form": "ooo",
+      "archetype": "shell",
+      "request": {
+        "inn": "5074000903",
+        "legal_form": "ooo",
+        "purpose": "inventory",
+        "amount": 550000,
+        "term_months": 12,
+        "needed_by": "month",
+        "preferred_product": null,
+        "declared_annual_revenue": 13000000,
+        "equipment": null,
+        "consents": [
+          {
+            "kind": "bki_company",
+            "subject_inn": "5074000903",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "bki_owner",
+            "subject_inn": "507430054029",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "personal_data",
+            "subject_inn": "507430054029",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          }
+        ]
+      },
+      "scenarios": {},
+      "statement_file": null,
+      "expected": {
+        "status": "in_review",
+        "route": "underwriter",
+        "route_reasons": [
+          "route_grade",
+          "route_flag_owner_or_director_changed_6m",
+          "route_flag_top_customer_concentration",
+          "route_flag_cash_withdrawal_share",
+          "route_flag_transit_operations"
+        ],
+        "data_quality_tier": "FULL",
+        "grade": "E",
+        "stop_factors": [],
+        "flags": [
+          "owner_or_director_changed_6m",
+          "top_customer_concentration",
+          "cash_withdrawal_share",
+          "transit_operations"
+        ],
+        "reasons": [
+          "limit_cash_flow",
+          "limit_below_product_minimum"
+        ],
+        "matches_request": null,
+        "offers": [],
+        "requested_documents": 0
+      },
+      "expected_after_statement": null,
+      "preapproval": null
+    },
+    {
+      "persona_id": "inflater",
+      "title": "Мошенничество: завышенная выручка",
+      "story": "Заявленная выручка больше подтверждённой ФНС более чем на 30%: флаг, заявку смотрит андеррайтер. Лимит считается по выручке ФНС, а не по заявленной.",
+      "company_id": "C03248",
+      "inn": "616400324807",
+      "legal_form": "ip",
+      "archetype": "inflater",
+      "request": {
+        "inn": "616400324807",
+        "legal_form": "ip",
+        "purpose": "inventory",
+        "amount": 1100000,
+        "term_months": 12,
+        "needed_by": "month",
+        "preferred_product": null,
+        "declared_annual_revenue": 41000000,
+        "equipment": null,
+        "consents": [
+          {
+            "kind": "bki_owner",
+            "subject_inn": "616400324807",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "personal_data",
+            "subject_inn": "616400324807",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          }
+        ]
+      },
+      "scenarios": {},
+      "statement_file": null,
+      "expected": {
+        "status": "in_review",
+        "route": "underwriter",
+        "route_reasons": [
+          "route_flag_declared_revenue_mismatch"
+        ],
+        "data_quality_tier": "FULL",
+        "grade": "B",
+        "stop_factors": [],
+        "flags": [
+          "declared_revenue_mismatch"
+        ],
+        "reasons": [
+          "limit_cash_flow"
+        ],
+        "matches_request": false,
+        "offers": [
+          {
+            "kind": "max_amount",
+            "product": "working_capital",
+            "amount": 570000,
+            "term_months": 12,
+            "rate": 0.2779,
+            "collateral": []
+          }
+        ],
+        "requested_documents": 0
+      },
+      "expected_after_statement": null,
+      "preapproval": null
+    },
+    {
+      "persona_id": "partial_statement",
+      "title": "PARTIAL: основной счёт в другом банке",
+      "story": "Через наш счёт идёт только часть бизнеса: сумма больше 1 млн ₽ уходит андеррайтеру. Он запрашивает выписку (`request_data`), клиент загружает её, лимит растёт.",
+      "company_id": "C03041",
+      "inn": "2312030413",
+      "legal_form": "ooo",
+      "archetype": "main_bank_elsewhere",
+      "request": {
+        "inn": "2312030413",
+        "legal_form": "ooo",
+        "purpose": "inventory",
+        "amount": 3000000,
+        "term_months": 12,
+        "needed_by": "month",
+        "preferred_product": null,
+        "declared_annual_revenue": 62000000,
+        "equipment": null,
+        "consents": [
+          {
+            "kind": "bki_company",
+            "subject_inn": "2312030413",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "bki_owner",
+            "subject_inn": "231231824611",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "personal_data",
+            "subject_inn": "231231824611",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          }
+        ]
+      },
+      "scenarios": {},
+      "statement_file": "partial_statement.json",
+      "expected": {
+        "status": "in_review",
+        "route": "underwriter",
+        "route_reasons": [
+          "route_data_partial_over_1m"
+        ],
+        "data_quality_tier": "PARTIAL",
+        "grade": "B",
+        "stop_factors": [],
+        "flags": [],
+        "reasons": [
+          "limit_cash_flow",
+          "limit_below_product_minimum"
+        ],
+        "matches_request": null,
+        "offers": [],
+        "requested_documents": 0
+      },
+      "expected_after_statement": {
+        "status": "in_review",
+        "route": "underwriter",
+        "route_reasons": [
+          "route_statement_upload"
+        ],
+        "data_quality_tier": "FULL",
+        "grade": "B",
+        "stop_factors": [],
+        "flags": [],
+        "reasons": [
+          "limit_cash_flow"
+        ],
+        "matches_request": false,
+        "offers": [
+          {
+            "kind": "max_amount",
+            "product": "working_capital",
+            "amount": 720000,
+            "term_months": 12,
+            "rate": 0.2678,
+            "collateral": [
+              "owner_guarantee"
+            ]
+          }
+        ],
+        "requested_documents": 0
+      },
+      "preapproval": null
+    },
+    {
+      "persona_id": "thin_statement",
+      "title": "THIN: недавно открытый счёт",
+      "story": "Счёт у нас открыт меньше полугода: система сама просит выписку из прежнего банка (`needs_data`). С выпиской заявка получает предложения и уходит андеррайтеру.",
+      "company_id": "C01963",
+      "inn": "6670019632",
+      "legal_form": "ooo",
+      "archetype": "new_account",
+      "request": {
+        "inn": "6670019632",
+        "legal_form": "ooo",
+        "purpose": "inventory",
+        "amount": 1150000,
+        "term_months": 12,
+        "needed_by": "month",
+        "preferred_product": null,
+        "declared_annual_revenue": 22000000,
+        "equipment": null,
+        "consents": [
+          {
+            "kind": "bki_company",
+            "subject_inn": "6670019632",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "bki_owner",
+            "subject_inn": "667031177887",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "personal_data",
+            "subject_inn": "667031177887",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          }
+        ]
+      },
+      "scenarios": {},
+      "statement_file": "thin_statement.json",
+      "expected": {
+        "status": "needs_data",
+        "route": "underwriter",
+        "route_reasons": [
+          "route_data_thin"
+        ],
+        "data_quality_tier": "THIN",
+        "grade": "A",
+        "stop_factors": [],
+        "flags": [],
+        "reasons": [],
+        "matches_request": null,
+        "offers": [],
+        "requested_documents": 1
+      },
+      "expected_after_statement": {
+        "status": "in_review",
+        "route": "underwriter",
+        "route_reasons": [
+          "route_statement_upload"
+        ],
+        "data_quality_tier": "FULL",
+        "grade": "A",
+        "stop_factors": [],
+        "flags": [],
+        "reasons": [
+          "limit_cash_flow"
+        ],
+        "matches_request": false,
+        "offers": [
+          {
+            "kind": "max_amount",
+            "product": "working_capital",
+            "amount": 450000,
+            "term_months": 12,
+            "rate": 0.2916,
+            "collateral": [
+              "owner_guarantee"
+            ]
+          }
+        ],
+        "requested_documents": 0
+      },
+      "preapproval": null
+    },
+    {
+      "persona_id": "source_down",
+      "title": "Источник недоступен",
+      "story": "БКИ недоступен после всех повторов: без обязательного источника решения нет, заявка у андеррайтера. Без сбоя эта компания получила бы предложения автоматически.",
+      "company_id": "C00298",
+      "inn": "2309002984",
+      "legal_form": "ooo",
+      "archetype": "regular",
+      "request": {
+        "inn": "2309002984",
+        "legal_form": "ooo",
+        "purpose": "inventory",
+        "amount": 600000,
+        "term_months": 12,
+        "needed_by": "month",
+        "preferred_product": null,
+        "declared_annual_revenue": 11000000,
+        "equipment": null,
+        "consents": [
+          {
+            "kind": "bki_company",
+            "subject_inn": "2309002984",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "bki_owner",
+            "subject_inn": "230930178849",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "personal_data",
+            "subject_inn": "230930178849",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          }
+        ]
+      },
+      "scenarios": {
+        "bki": "error"
+      },
+      "statement_file": null,
+      "expected": {
+        "status": "in_review",
+        "route": "underwriter",
+        "route_reasons": [
+          "route_source_unavailable"
+        ],
+        "data_quality_tier": "FULL",
+        "grade": null,
+        "stop_factors": [],
+        "flags": [],
+        "reasons": [],
+        "matches_request": null,
+        "offers": [],
+        "requested_documents": 0
+      },
+      "expected_after_statement": null,
+      "preapproval": null
+    },
+    {
+      "persona_id": "not_found",
+      "title": "Компания не найдена",
+      "story": "ИНН, которого нет в ЕГРЮЛ / ЕГРИП: автоматический отказ сразу после проверки реестра.",
+      "company_id": null,
+      "inn": "7703999999",
+      "legal_form": "ooo",
+      "archetype": null,
+      "request": {
+        "inn": "7703999999",
+        "legal_form": "ooo",
+        "purpose": "inventory",
+        "amount": 500000,
+        "term_months": 12,
+        "needed_by": "month",
+        "preferred_product": null,
+        "declared_annual_revenue": 10000000,
+        "equipment": null,
+        "consents": [
+          {
+            "kind": "bki_company",
+            "subject_inn": "7703999999",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "bki_owner",
+            "subject_inn": "770399999915",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          },
+          {
+            "kind": "personal_data",
+            "subject_inn": "770399999915",
+            "given_at": "2026-10-24T10:15:00+03:00"
+          }
+        ]
+      },
+      "scenarios": {},
+      "statement_file": null,
+      "expected": {
+        "status": "declined",
+        "route": "auto",
+        "route_reasons": [],
+        "data_quality_tier": null,
+        "grade": null,
+        "stop_factors": [],
+        "flags": [],
+        "reasons": [
+          "company_not_found"
+        ],
+        "matches_request": null,
+        "offers": [],
+        "requested_documents": 0
+      },
+      "expected_after_statement": null,
+      "preapproval": null
+    }
+  ]
+}

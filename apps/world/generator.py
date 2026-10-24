@@ -32,9 +32,9 @@ from .industries import BY_KEY, INDUSTRIES, Industry
 from .loans import WorldLoan, draw_loans
 from .outcomes import OutcomeConfig, Sample, draw_outcome, load_outcome_config
 from .registries import aml, arbitration, client_card, fssp
-from .turnovers import generate_accounts
+from .turnovers import REGULAR, AccountProfile, generate_accounts
 
-GENERATOR_VERSION = 'world-t06-1'
+GENERATOR_VERSION = 'world-t12-1'
 DEFAULT_SEED = 42
 DEFAULT_N = 5000
 DEFAULT_AS_OF = date(2026, 10, 1)
@@ -51,6 +51,9 @@ class Company(BaseModel):
     company_id: str
     q: float  # hidden quality, never shown to the engine
     archetype: Archetype  # hidden fraud or data-gap archetype (T04), never shown to the engine
+    # Hidden, like the archetype: how our account differs from the whole business (T04). The demo
+    # personas (T12) build the statements from other banks from it.
+    account_profile: AccountProfile = REGULAR
     industry: str
     legal_form: LegalForm
     size: Literal['micro', 'small']
@@ -281,14 +284,16 @@ def _company(seed: int, idx: int, as_of: date, outcomes: OutcomeConfig) -> Compa
         archetype = draw_data_gap(archetype_rng, q=q, age_days=age_days, loans=loans, bki=bki)
 
     turnovers_rng = company_rng(seed, company_id, 'turnovers')
+    profile = REGULAR
     if archetype == 'shell':
         accounts = shell_accounts(turnovers_rng, annual_revenue=annual_revenue, registered_at=registered_at,
                                   as_of=as_of)
     else:
+        profile = account_profile(archetype_rng, archetype, as_of)
         accounts = generate_accounts(turnovers_rng, q=q, industry=industry, legal_form=legal_form,
                                      employees=employees, annual_revenue=annual_revenue,
                                      revenue_growth=revenue_growth, registered_at=registered_at, fns=fns,
-                                     loans=loans, as_of=as_of, profile=account_profile(archetype_rng, archetype, as_of))
+                                     loans=loans, as_of=as_of, profile=profile)
     card = client_card(company_rng(seed, company_id, 'client_card'), archetype=archetype, legal_form=legal_form,
                        accounts=accounts, bki=bki, loans=loans, as_of=as_of)
     proceedings = fssp(company_rng(seed, company_id, 'fssp'), q=q, egrul=egrul, fns=fns, bki=bki,
@@ -299,7 +304,7 @@ def _company(seed: int, idx: int, as_of: date, outcomes: OutcomeConfig) -> Compa
     q = round(q, 6)  # the stored q, so that pd_12m can be recomputed from the company alone
     pd_12m, default_12m, sample = draw_outcome(company_rng(seed, company_id, 'outcome'), outcomes, q=q,
                                                industry=industry, archetype=archetype)
-    return Company(company_id=company_id, q=q, archetype=archetype, industry=industry.key,
+    return Company(company_id=company_id, q=q, archetype=archetype, account_profile=profile, industry=industry.key,
                    legal_form=legal_form, size=size, employees=employees, annual_revenue=annual_revenue,
                    revenue_growth=revenue_growth,
                    declared_annual_revenue=declared_revenue(archetype_rng, archetype, annual_revenue),

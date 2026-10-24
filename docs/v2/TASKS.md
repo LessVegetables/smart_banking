@@ -37,6 +37,7 @@ What we build and why: [SPEC.md](SPEC.md) (in Russian). Contracts between tracks
 
 | 2026-10-24 | Overdraft pre-approval (T22, `apps/api/preapproval.py`): a daily batch over every client runs the application's stages without an application: `FULL` tier only, no stop factors and no flags, the champion's score, a 12-month overdraft `quote` at the auto route; the amount's own route must be auto, at least the product minimum and under the rate cap. The bureau is queried on a standing 218-ФЗ consent assumed from account opening (`# MOCK:`). The latest result per ИНН is in `preapprovals`, valid 30 days; the application is still decided anew. |
 | 2026-10-25 | LLM adapter (T24, `apps/api/assistant.py`): any OpenAI-compatible server through `{LLM_BASE_URL}/chat/completions`; the model is on when `LLM_BASE_URL` and `LLM_MODEL` are set, `LLM_API_KEY` is optional (local servers need none). No other switch: `ASSISTANT_LLM_ENABLED` and `OPENAI_*` are gone. No model is bundled in compose; the README shows an open-weights example (Qwen2.5-7B-Instruct via Ollama or vLLM). Timeout 30 s and 500 tokens are code constants. |
+| 2026-10-25 | Demo personas (T12, `apps/world/personas.py`): one company per demo outcome from the default world (seed 42, 5000), the first in world order whose decision passes the target's check; expected outcomes are the conveyor's own, in `apps/world/demo/personas.json`, with other-bank statements for the `PARTIAL` and `THIN` personas in `apps/world/demo/statements/`. Selection reads the hidden archetype and account profile (now stored on `Company`, generator `world-t12-1`), nothing else hidden. The `committee` persona has no offers: no company reaches the committee with one on this world. The econ team confirms the table. |
 
 ## Open questions
 
@@ -83,7 +84,7 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 | T09 | Account data-quality metrics and tier `FULL` / `PARTIAL` / `THIN` (SPEC §5.1) | S | T08 | done | PR #11 |
 | T10 | Scorecard training: WoE binning, logistic regression, points scaling, export `scorecard_v1.json` | M | T05, T08 | done | PR #10 |
 | T11 | Validation metrics: Gini on holdout, calibration by grade, PSI → JSON for the UI | S | T10 | done | PR #13 |
-| T12 | Demo personas picked from the world (one per outcome, ИП and ООО, fraud, each data-quality tier) + expected-outcomes table with the econ team | S | T05, T18 | todo | |
+| T12 | Demo personas picked from the world (one per outcome, ИП and ООО, fraud, each data-quality tier) + expected-outcomes table with the econ team | S | T05, T18 | done | PR #25 |
 
 ### Track 2 — Engine & workflow
 
