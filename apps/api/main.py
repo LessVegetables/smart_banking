@@ -13,18 +13,19 @@ from typing import Any
 from fastapi import FastAPI, Request, Response, HTTPException, UploadFile, File, Depends
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, ValidationError
 from sqlalchemy import select, update
 from sqlalchemy.orm.exc import StaleDataError
 from sqlalchemy.exc import IntegrityError
 
-from .db import Session, User, Login, Survey, Application, SubmissionKey, Document, Job, DATA, now, init_db, uid
+from .db import Session, User, Login, Survey, Application, SubmissionKey, Document, Job, LoanApplication, DATA, now, init_db, uid
 from .catalog import RULES, PRODUCTS, QUESTIONS, active_questions, clean_answers, validate_answer, business_age_months, ROOT
 from .engine import evaluate
 from .personas import PERSONAS, persona_answers
 from .worker import loop, event, save_decision
 from .storage import storage
 from .assistant import explain
+from . import workflow
 
 DEMO=os.environ.get('DEMO_MODE','true').lower()=='true'
 COOKIE_SECURE=os.environ.get('COOKIE_SECURE','false').lower()=='true'
@@ -323,6 +324,62 @@ def review(id:str,body:Review,user=Depends(staff),db=Depends(db_session)):
     else:raise HTTPException(422,'Неизвестное действие')
     a.events=[*a.events,{'at':now(),'status':'review','message':body.comment,'actor':user.id}]
     save_decision(a,result);return application_json(a,db)
+
+# --- v2 applications (T19): statuses SPEC §13, audit log; staff actions are T20 ---
+class V2Submission(Input):idempotency_key:str=Field(min_length=8,max_length=200);request:dict[str,Any]
+class V2Revision(Input):revision:int
+class V2Accept(V2Revision):offer_id:str=Field(min_length=1,max_length=200)
+
+def own_v2(db,id,user):
+    a=db.get(LoanApplication,id)
+    if not a or (user.role!='staff' and a.user_id!=user.id):raise HTTPException(404,'Заявка не найдена')
+    return a
+
+def client_v2(db,id,user,revision):
+    a=own_v2(db,id,user)
+    if a.user_id!=user.id:raise HTTPException(403,'Действие доступно только клиенту')
+    if a.revision!=revision:raise HTTPException(409,'Заявка изменилась. Обновите её.')
+    return a
+
+@app.post('/api/v2/applications')
+def submit_v2(body:V2Submission,user=Depends(current_user),db=Depends(db_session)):
+    try:a=workflow.submit(db,user.id,f'{user.id}:{body.idempotency_key}',body.request)
+    except ValidationError as e:raise HTTPException(422,e.errors(include_url=False,include_context=False,include_input=False))
+    except ValueError as e:raise HTTPException(422,str(e))
+    return workflow.application_json(db,a,staff=False)
+
+@app.get('/api/v2/applications')
+def applications_v2(status:str|None=None,user=Depends(current_user),db=Depends(db_session)):
+    q=select(LoanApplication).order_by(LoanApplication.created.desc())
+    if user.role!='staff':q=q.where(LoanApplication.user_id==user.id)
+    if status:q=q.where(LoanApplication.status==status)
+    return [workflow.application_json(db,a,staff=user.role=='staff') for a in db.scalars(q)]
+
+@app.get('/api/v2/applications/{id}')
+def application_v2(id:str,user=Depends(current_user),db=Depends(db_session)):
+    return workflow.application_json(db,own_v2(db,id,user),staff=user.role=='staff')
+
+@app.get('/api/v2/applications/{id}/events')
+def application_events_v2(id:str,user=Depends(staff),db=Depends(db_session)):
+    return [workflow.event_json(e) for e in workflow.events(db,own_v2(db,id,user).id)]
+
+@app.post('/api/v2/applications/{id}/accept')
+def accept_v2(id:str,body:V2Accept,user=Depends(current_user),db=Depends(db_session)):
+    a=client_v2(db,id,user,body.revision)
+    try:workflow.accept(db,a,body.offer_id,actor=workflow.actor_of(user))
+    except workflow.IllegalTransition as e:raise HTTPException(409,str(e))
+    except LookupError as e:raise HTTPException(422,str(e))
+    db.flush()
+    # A response, not an exception: the expiry must commit.
+    if a.status=='expired':return JSONResponse(status_code=409,content={'detail':'Срок действия предложения истёк. Подайте новую заявку.'})
+    return workflow.application_json(db,a,staff=False)
+
+@app.post('/api/v2/applications/{id}/withdraw')
+def withdraw_v2(id:str,body:V2Revision,user=Depends(current_user),db=Depends(db_session)):
+    a=client_v2(db,id,user,body.revision)
+    try:workflow.withdraw(db,a,actor=workflow.actor_of(user))
+    except workflow.IllegalTransition as e:raise HTTPException(409,str(e))
+    db.flush();return workflow.application_json(db,a,staff=False)
 
 class Message(Input):message:str=Field(min_length=1,max_length=1000);question_id:str|None=None;application_id:str|None=None
 @app.post('/api/assistant/messages')
