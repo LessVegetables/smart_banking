@@ -1,0 +1,7 @@
+{
+  "version": "data_quality_v0",
+  "history_months": {"full": 12, "partial": 6},
+  "revenue_coverage": {"full": 0.7, "partial": 0.3},
+  "operating_inflow_share": {"full": 0.8, "partial": 0.6},
+  "regularity_months": {"full": 10, "partial": 7}
+}

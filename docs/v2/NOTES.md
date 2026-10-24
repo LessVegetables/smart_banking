@@ -15,11 +15,6 @@ Everything one task leaves for another lives here, filed under the task that has
 - `q`, `archetype`, `pd_12m` and `default_12m` are hidden truth of the synthetic world. They must never reach features, the engine or the UI; only training labels (T10) and validation (T11) may read the outcome. (from T01–T05, `apps/world/README.md`)
 - New data in the world gets its own `company_rng` stream; hash tests pin what T01–T05 generate. (from T01, `apps/world/README.md`)
 
-## T09 — data-quality tier
-
-- Revenue coverage: divide by `fns_revenue(fns, egrul, accounts).annualized` (`apps/api/features/revenue.py`), not by the raw ФНС figure, which is only part of a year for companies registered during it. The account features need 6+ months (`accounts.py`, `MIN_MONTHS`); keep the history metric consistent with that. (from T08)
-- Sanity check: with SPEC §5.1 thresholds, regular companies come out at about 75% `FULL`, 18% `PARTIAL`, 7% `THIN` (seed 7, 3000 companies). `THIN` is mostly young companies. (from T02, `apps/world/README.md`)
-
 ## T11 — validation metrics
 
 - Holdout is a random split on one snapshot, not out-of-time; list this as a limitation on the validation page. (from T05)
@@ -49,10 +44,27 @@ Everything one task leaves for another lives here, filed under the task that has
 - The trained card is `apps/ml/scorecard_v1.json`. Read bins as `apps/ml/score.py` does (`find_bin`): numeric `[lower, upper)`, categorical by membership, `None` → the missing bin; a missing bin with `woe: null` has 0 points (average risk). Simplest is to import `find_bin` / `total_points` from `apps.ml`: the package imports only the contracts. (from T10)
 - The `Scorecard` contract has no `feature_set_version`; it is in `apps/ml/scorecard_v1.training.json`. Refuse to score when it differs from `Features.feature_set_version`. Proposed: a shared-folder PR adding `feature_set_version` to `Scorecard`. (from T10)
 
+## T16 — limit and pricing
+
+- Data-quality tier: `data_quality_from_responses(enrichment.responses, request.declared_annual_revenue)` (`apps/api/features/data_quality.py`). `PARTIAL`: L_поток on the actual account flow, no extrapolation; `THIN`: no L_поток (SPEC §5.1). `revenue_coverage` is scaled to 12 months for short histories, so don't reuse it as "actual flow". (from T09)
+
+## T18 — routing
+
+- Route on `DataQuality.tier` from the same call as T16 (`apps/api/features/data_quality.py`); the reason to show is in `client_message`, and each metric's tier tells the underwriter which one failed. (from T09)
+
 ## T19 — state machine
 
 - Features need an `as_of`: `features_from_responses` takes the day the sources answered. The mock world is frozen at `WORLD_AS_OF` (default 2026-10-01), so the further today is from it, the more business age, episode ages and the 3-month inquiry window drift from the world's data. Decide which date the demo pipeline passes (probably the world's `as_of`). (from T08)
+- Stage 3 ends with the data-quality tier: call `data_quality_from_responses(enrichment.responses, request.declared_annual_revenue)` right after `enrich` and store it with the application. (from T09)
 - `company_not_found` → the application can't be processed; enrichment not complete (`unavailable_required`) → underwriter queue with reason "source unavailable"; otherwise → stop-factors and scoring. (from T07, `apps/sources/README.md`)
+
+## T22 — overdraft pre-approval
+
+- The batch has no application: call `data_quality(payloads)` without `declared_revenue`. A company with no ФНС revenue then gets `revenue_coverage = null` → `THIN`, so it is never pre-approved. (from T09)
+
+## T23 — statement upload
+
+- `data_quality` reads only our own account statement. Decide how an uploaded statement changes the metrics (most likely coverage: add its operating inflows to ours, at the lower trust level) and recompute through the same function. (from T09)
 
 ## T25 — ИНН entry and consents
 
