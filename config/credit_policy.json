@@ -1,0 +1,29 @@
+{
+  "version": "credit_policy_v0",
+  "limit": {
+    "cfads_cv_cap": 0.5,
+    "dscr_min": {"A": 1.2, "B": 1.3, "C": 1.5, "D": 1.75, "E": 2.0},
+    "leverage_multiplier": 0.5,
+    "collateral_ltv": 0.7,
+    "turnover_multiplier": 0.5,
+    "amount_step": 10000
+  },
+  "pricing": {
+    "key_rate": 0.14,
+    "funding_spread": 0.015,
+    "capital": 0.015,
+    "margin": 0.02,
+    "rate_cap": 0.30,
+    "lgd": {"unsecured": 0.65, "owner_guarantee": 0.55, "equipment_pledge": 0.35},
+    "msp_guarantee_lgd_factor": 0.5,
+    "msp_guarantee_fee": 0.01,
+    "processing_cost": {"auto": 3000, "underwriter": 25000, "committee": 60000}
+  },
+  "products": {
+    "overdraft": {"min_amount": 100000, "max_amount": 5000000, "min_term": 12, "max_term": 12},
+    "working_capital": {"min_amount": 100000, "max_amount": 5000000, "min_term": 3, "max_term": 24},
+    "investment": {"min_amount": 500000, "max_amount": 15000000, "min_term": 12, "max_term": 60,
+                   "leverage_multiplier": 0.7, "min_down_payment_share": 0.15},
+    "credit_line": {"min_amount": 300000, "max_amount": 10000000, "min_term": 12, "max_term": 12}
+  }
+}
