@@ -30,9 +30,9 @@ COOKIE_SECURE=$secure
 POSTGRES_PASSWORD=$db_password
 STAFF_PASSWORD=$staff_password
 TELEGRAM_BOT_TOKEN=
-ASSISTANT_LLM_ENABLED=false
-OPENAI_API_KEY=
-OPENAI_MODEL=
+LLM_BASE_URL=
+LLM_API_KEY=
+LLM_MODEL=
 EOF
     printf 'Created .env.vps with new server-specific credentials.\n'
 elif ! grep -Fqx "APP_ORIGIN=$origin" .env.vps; then

@@ -39,7 +39,7 @@ with zipfile.ZipFile(OUTPUT) as archive:
         assert hashlib.sha256(archive.read('alfa_hack/'+rel)).hexdigest()==expected
     # Ensure accidentally hardcoded local credentials cannot reach a release.
     payloads=[archive.read(name) for name in archive.namelist()]
-    sensitive={'STAFF_PASSWORD','POSTGRES_PASSWORD','OPENAI_API_KEY','TELEGRAM_BOT_TOKEN','AWS_SECRET_ACCESS_KEY','AWS_ACCESS_KEY_ID'}
+    sensitive={'STAFF_PASSWORD','POSTGRES_PASSWORD','LLM_API_KEY','TELEGRAM_BOT_TOKEN','AWS_SECRET_ACCESS_KEY','AWS_ACCESS_KEY_ID'}
     for env_file in (ROOT/'.env',ROOT/'.env.vps'):
         if not env_file.exists():continue
         for line in env_file.read_text(encoding='utf-8-sig').splitlines():
