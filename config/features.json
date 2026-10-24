@@ -1,0 +1,18 @@
+{
+  "version": "features_v0",
+  "overdue": {
+    "technical_days": 5,
+    "min_amount": 1000,
+    "min_payment_share": 0.01,
+    "half_weight_after_months": 24,
+    "ignore_after_months": 36
+  },
+  "inquiry_window_months": 3,
+  "change_window_months": 6,
+  "okved_risk_groups": {
+    "low": ["10.71", "25.62", "46.90", "62.01"],
+    "medium": ["01.11", "45.20", "47.11", "96.02"],
+    "high": ["41.20", "49.41", "56.10", "79.11"]
+  },
+  "okved_default_risk_group": "medium"
+}
