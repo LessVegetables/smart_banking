@@ -22,17 +22,11 @@ Everything one task leaves for another lives here, filed under the task that has
 - Expected grades come from `apps/ml/scorecard_v1.json`. Retraining it (any change to `config/features.json`, `config/world_outcomes.json` or the world) moves persona grades, so the expected-outcomes table must be regenerated with it. (from T10)
 - Per-persona source failures (e.g. ФССП down) go in `MOCK_SOURCES_SCENARIOS`; the world doesn't change. For sampling without latency use `payload(company, source)`. (from T06/T07, `apps/sources/README.md`)
 
-## T14 — stop-factors and flags
-
-- Revenue mismatch flag: compare the declared revenue with `fns_revenue(...).estimate_12m` (`apps/api/features/revenue.py`), not with ФНС as filed: 7% / 15% of honest clients instead of 21% / 82%. (from T08, `apps/api/features/README.md`)
-- Overdue stop factors: use `subject_history(report, as_of, default_policy().overdue)` from `apps/api/features/credit.py` per report: `worst_days_24m >= 90` and `current_overdue_days > 30` already exclude technical delays and small amounts. "3+ inquiries in 30 days": `inquiries_since(bki, as_of - 30 days)`. (from T08)
-- "3+ credit inquiries in 30 days" must count other banks' inquiries only; our application leaves no inquiry in the report. (from T06)
-- `Enrichment.degraded` lists optional sources that didn't answer (ФНС, ФССП, арбитраж): each needs the "source unavailable" flag and a penalty. (from T07)
-
 ## T15 — scoring adapter
 
 - The trained card is `apps/ml/scorecard_v1.json`. Read bins as `apps/ml/score.py` does (`find_bin`): numeric `[lower, upper)`, categorical by membership, `None` → the missing bin; a missing bin with `woe: null` has 0 points (average risk). Simplest is to import `find_bin` / `total_points` from `apps.ml`: the package imports only the contracts. (from T10)
 - The `Scorecard` contract has no `feature_set_version`; it is in `apps/ml/scorecard_v1.training.json`. Refuse to score when it differs from `Features.feature_set_version`. Proposed: a shared-folder PR adding `feature_set_version` to `Scorecard`. (from T10)
+- T14 emits `source_unavailable_fns`, `source_unavailable_fssp` and `source_unavailable_arbitration` flags. Apply a score penalty for each degraded source after the econ team defines penalty values; no such values exist in the current policy. (`apps/api/stop_factors.py`)
 
 ## T16 — limit and pricing
 
@@ -41,6 +35,7 @@ Everything one task leaves for another lives here, filed under the task that has
 ## T18 — routing
 
 - Route on `DataQuality.tier` from the same call as T16 (`apps/api/features/data_quality.py`); the reason to show is in `client_message`, and each metric's tier tells the underwriter which one failed. (from T09)
+- Every flag returned by T14 requires staff review under SPEC §7; preserve its reason code and staff/client wording in route reasons. (`apps/api/stop_factors.py`)
 
 ## T19 — state machine
 
@@ -84,3 +79,4 @@ Everything one task leaves for another lives here, filed under the task that has
 ## Unassigned
 
 - PSI on the live application flow (model monitoring) has no task. T11's PSI compares the holdout with the training sample, so it is ≈ 0 by construction. Once applications are stored (T19), `psi(...)` from `apps/ml/validation.py` can compare their grades and card features with the training sample. (from T11)
+- SPEC §7 includes a flag when the ОКВЭД does not match the application purpose, but defines no purpose-to-ОКВЭД mapping. Agree and configure that policy before implementing the flag in `apps/api/stop_factors.py`.
