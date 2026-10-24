@@ -1,6 +1,6 @@
 # Conveyor v2 — tasks
 
-What we build and why: [SPEC.md](SPEC.md) (in Russian). Contracts between tracks: [CONTRACTS.md](CONTRACTS.md).
+What we build and why: [SPEC.md](SPEC.md) (in Russian). Contracts between tracks: [CONTRACTS.md](CONTRACTS.md). Handoffs between tasks: [NOTES.md](NOTES.md).
 
 ## How to use this file
 
@@ -8,6 +8,7 @@ What we build and why: [SPEC.md](SPEC.md) (in Russian). Contracts between tracks
 - Update **only your own rows**: set `Status` and `Owner / PR` when you start, open a PR, and finish.
 - Status values: `todo` → `doing` → `review` → `done`, or `cut`.
 - A task can start when everything in `Depends on` is `done`, **or** when it can run on the fixtures from T00 (see "Unblocking").
+- Anything you leave for a later task goes into [NOTES.md](NOTES.md) under that task, in the same commit. Before starting, read your task's section there; when finishing, delete the notes you handled.
 - A new decision goes into the Decisions log with a date. Don't reopen a logged decision in code or in a PR; raise it with the team instead.
 
 ## Decisions log
