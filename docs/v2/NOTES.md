@@ -15,17 +15,14 @@ Everything one task leaves for another lives here, filed under the task that has
 - `q`, `archetype`, `pd_12m` and `default_12m` are hidden truth of the synthetic world. They must never reach features, the engine or the UI; only training labels (T10) and validation (T11) may read the outcome. (from T01–T05, `apps/world/README.md`)
 - New data in the world gets its own `company_rng` stream; hash tests pin what T01–T05 generate. (from T01, `apps/world/README.md`)
 
-## T08 — feature extraction
-
-- Declared revenue covers the last 12 months; ФНС `annual_revenue` is the last filed calendar year, and only part of a year for companies registered last year. Compared head-on, the >30% gap appears for 21% of honest companies with a full year and 82% of those registered last year. Annualize part-year reports and/or compare with `operating_inflows_12m`. (from T04/T07, `apps/world/README.md` «Известные ограничения»)
-- The SPEC §5 overdue rules (technical delays, small amounts, weight of old episodes) are applied here, not in the world. The world has cases for every rule (`test_world_has_cases_for_every_overdue_rule`). (from T03)
-
 ## T09 — data-quality tier
 
+- Revenue coverage: divide by `fns_revenue(fns, egrul, accounts).annualized` (`apps/api/features/revenue.py`), not by the raw ФНС figure, which is only part of a year for companies registered during it. The account features need 6+ months (`accounts.py`, `MIN_MONTHS`); keep the history metric consistent with that. (from T08)
 - Sanity check: with SPEC §5.1 thresholds, regular companies come out at about 75% `FULL`, 18% `PARTIAL`, 7% `THIN` (seed 7, 3000 companies). `THIN` is mostly young companies. (from T02, `apps/world/README.md`)
 
 ## T10 — scorecard training
 
+- Features: `extract_features(SourcePayloads.from_company(company), world.meta.as_of)` from `apps/api/features`, the same call the live engine makes. `feature_set_version` is the version of `config/features.json`; record it with the scorecard and retrain when it changes. (from T08)
 - Every company in the world has an outcome, as if the bank had lent to all of them. Real banks only know outcomes of issued loans (reject inference). Decide which companies go into training and say so in the docs. (from T05)
 - The train/holdout split isn't stratified by outcome: default rates differ by chance (9.9% vs 7.2%, seed 7, 3000 companies). Stratify at training time if needed; the world doesn't have to change. (from T05)
 
@@ -45,12 +42,14 @@ Everything one task leaves for another lives here, filed under the task that has
 
 ## T14 — stop-factors and flags
 
-- Revenue mismatch flag: see the T08 note. Head-on comparison will flag far too many honest clients.
+- Revenue mismatch flag: compare the declared revenue with `fns_revenue(...).estimate_12m` (`apps/api/features/revenue.py`), not with ФНС as filed: 7% / 15% of honest clients instead of 21% / 82%. (from T08, `apps/api/features/README.md`)
+- Overdue stop factors: use `subject_history(report, as_of, default_policy().overdue)` from `apps/api/features/credit.py` per report: `worst_days_24m >= 90` and `current_overdue_days > 30` already exclude technical delays and small amounts. "3+ inquiries in 30 days": `inquiries_since(bki, as_of - 30 days)`. (from T08)
 - "3+ credit inquiries in 30 days" must count other banks' inquiries only; our application leaves no inquiry in the report. (from T06)
 - `Enrichment.degraded` lists optional sources that didn't answer (ФНС, ФССП, арбитраж): each needs the "source unavailable" flag and a penalty. (from T07)
 
 ## T19 — state machine
 
+- Features need an `as_of`: `features_from_responses` takes the day the sources answered. The mock world is frozen at `WORLD_AS_OF` (default 2026-10-01), so the further today is from it, the more business age, episode ages and the 3-month inquiry window drift from the world's data. Decide which date the demo pipeline passes (probably the world's `as_of`). (from T08)
 - `company_not_found` → the application can't be processed; enrichment not complete (`unavailable_required`) → underwriter queue with reason "source unavailable"; otherwise → stop-factors and scoring. (from T07, `apps/sources/README.md`)
 
 ## T25 — ИНН entry and consents
