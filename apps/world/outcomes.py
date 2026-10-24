@@ -31,8 +31,8 @@ payment over the next 12 months. A real outcome is read from the loan book: the 
 
 SIMPLIFICATION: every company in the world gets an outcome, as if the bank had lent to
 all of them. A real training sample only has outcomes for approved loans, and the bank
-has to correct for the rejected applicants (reject inference). T10 decides which
-companies to train on.
+has to correct for the rejected applicants (reject inference). The scorecard (T10,
+apps/ml/) trains on every company of the training sample.
 """
 from __future__ import annotations
 
