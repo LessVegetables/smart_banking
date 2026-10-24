@@ -27,6 +27,7 @@ What we build and why: [SPEC.md](SPEC.md) (in Russian). Contracts between tracks
 | 2026-10-24 | Scorecard training lives in `apps/ml/` (T10). The trained card is `apps/ml/scorecard_v1.json`; its `feature_set_version` and training data are in `scorecard_v1.training.json`, because the `Scorecard` contract has no field for them. The card trains on every company of the world's training sample, with no reject inference. |
 | 2026-10-24 | Data-quality thresholds are in `config/data_quality.json` (T09), separate from `config/features.json`: changing them doesn't change features or require retraining. Its `version` is `DataQuality.policy_version`. The econ team owns the values. |
 | 2026-10-24 | Scorecard validation (T11) is `apps/ml/scorecard_v1.validation.json`, regenerated with the card by `python -m apps.ml`. PSI compares the holdout with the training sample: the world is one snapshot, so there is no later population. PSI thresholds 0.1 / 0.25 and 95% intervals are conventional and live in `apps/ml/validation.py`; the econ team confirms them. |
+| 2026-10-24 | Scoring (T15): the trained `apps/ml/scorecard_v1.json` decides; the hand-set `apps/api/scorecards/scorecard_v0.json` runs as the shadow challenger, logged and stored in `Decision.challenger` only. Both are set in `.env` (`SCORECARD_CHAMPION`, `SCORECARD_CHALLENGER`). A card's feature-set version is in its passport `scorecard_vN.training.json`; the adapter refuses to score other features. v0 weights: the econ team confirms them. |
 
 ## Open questions
 
@@ -81,7 +82,7 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 |---|---|---|---|---|---|
 | T13 | Fact store and data model: declared vs verified value, source, trust level, timestamp; DB migrations | M | T00 | done | PR #12 |
 | T14 | Stop-factors and flags (SPEC §7) | S–M | T08, T13 | done | PR #14 |
-| T15 | Scoring adapter: loads scorecard JSON (`scorecard_v0.json` hand-set first), model versioning, optional challenger in shadow mode | S | T00 | todo | |
+| T15 | Scoring adapter: loads scorecard JSON (`scorecard_v0.json` hand-set first), model versioning, optional challenger in shadow mode | S | T00 | done | PR #15 |
 | T16 | Limit (CFADS, DSCR, caps, data-quality tier) + risk-based pricing (SPEC §9) | M | T09, T15 | todo | |
 | T17 | Offer generator + counterfactual explanations (SPEC §10) | M | T16 | todo | |
 | T18 | Routing by authority matrix, including data-quality tier (SPEC §11) | S | T09, T14, T15 | todo | |

@@ -10,7 +10,8 @@ config = context.config
 if os.environ.get('DATABASE_URL'):
     config.set_main_option('sqlalchemy.url', os.environ['DATABASE_URL'].replace('%', '%%'))
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # init_db runs migrations inside the API: keep loggers of modules imported earlier (e.g. scoring) working.
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 target_metadata = Base.metadata
 
