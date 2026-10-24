@@ -80,7 +80,7 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 | ID | Task | Size | Depends on | Status | Owner / PR |
 |---|---|---|---|---|---|
 | T13 | Fact store and data model: declared vs verified value, source, trust level, timestamp; DB migrations | M | T00 | done | PR #12 |
-| T14 | Stop-factors and flags (SPEC §7) | S–M | T08, T13 | todo | |
+| T14 | Stop-factors and flags (SPEC §7) | S–M | T08, T13 | done | PR #14 |
 | T15 | Scoring adapter: loads scorecard JSON (`scorecard_v0.json` hand-set first), model versioning, optional challenger in shadow mode | S | T00 | todo | |
 | T16 | Limit (CFADS, DSCR, caps, data-quality tier) + risk-based pricing (SPEC §9) | M | T09, T15 | todo | |
 | T17 | Offer generator + counterfactual explanations (SPEC §10) | M | T16 | todo | |
