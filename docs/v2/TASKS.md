@@ -29,6 +29,7 @@ What we build and why: [SPEC.md](SPEC.md) (in Russian). Contracts between tracks
 | 2026-10-24 | Scorecard validation (T11) is `apps/ml/scorecard_v1.validation.json`, regenerated with the card by `python -m apps.ml`. PSI compares the holdout with the training sample: the world is one snapshot, so there is no later population. PSI thresholds 0.1 / 0.25 and 95% intervals are conventional and live in `apps/ml/validation.py`; the econ team confirms them. |
 | 2026-10-24 | Scoring (T15): the trained `apps/ml/scorecard_v1.json` decides; the hand-set `apps/api/scorecards/scorecard_v0.json` runs as the shadow challenger, logged and stored in `Decision.challenger` only. Both are set in `.env` (`SCORECARD_CHAMPION`, `SCORECARD_CHALLENGER`). A card's feature-set version is in its passport `scorecard_vN.training.json`; the adapter refuses to score other features. v0 weights: the econ team confirms them. |
 | 2026-10-24 | Limit and pricing policy is in `config/credit_policy.json` (T16): DSCR by grade (E = 2.0, not in SPEC), leverage and collateral multipliers, rate components, LGD table, processing costs, the 30% cap (rate + МСП guarantee fee), product ranges. Its `version` is the credit policy version. The econ team owns the values. Limit inputs never use the declared revenue: ФНС revenue, else our account's customer inflows of the last 12 months, else no leverage room. Equipment pledge limit = min(70% of price, price − down payment). |
+| 2026-10-24 | Offer generator (T17, `apps/api/offers.py`): variants in SPEC §10 order, at most 3, each priced at the route of its own amount. Standard collateral: owner guarantee for ООО working capital and investment loans, equipment pledge for investment loans, none for ИП, overdraft and credit line. The МСП guarantee is offered only when it gives the requested amount or a rate under the cap. Offers are valid 10 days; with no offer, reapply after 90 days. These values are code constants until a shared-folder PR moves them to `config/credit_policy.json`. |
 
 ## Open questions
 
@@ -85,7 +86,7 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 | T14 | Stop-factors and flags (SPEC §7) | S–M | T08, T13 | done | PR #14 |
 | T15 | Scoring adapter: loads scorecard JSON (`scorecard_v0.json` hand-set first), model versioning, optional challenger in shadow mode | S | T00 | done | PR #15 |
 | T16 | Limit (CFADS, DSCR, caps, data-quality tier) + risk-based pricing (SPEC §9) | M | T09, T15 | done | PR #16 |
-| T17 | Offer generator + counterfactual explanations (SPEC §10) | M | T16 | todo | |
+| T17 | Offer generator + counterfactual explanations (SPEC §10) | M | T16 | done | PR #17 |
 | T18 | Routing by authority matrix, including data-quality tier (SPEC §11) | S | T09, T14, T15 | todo | |
 | T19 | Application state machine v2 + events + audit log (SPEC §13) | M | T13 | todo | |
 | T20 | Staff actions API: review, override with reason code, committee with two signatures | M | T18, T19 | todo | |

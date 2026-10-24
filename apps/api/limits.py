@@ -11,7 +11,7 @@
 The cash-flow constraint depends on the rate and the rate on the amount (processing cost
 over the average balance), so `quote` iterates the two until the amount stops moving.
 The building blocks (`CashFlow`, `limit_breakdown`, `quote`) are what the offer generator
-(T17) combines into offers; see LIMITS.md.
+(T17, offers.py) combines into offers; see LIMITS.md.
 """
 from __future__ import annotations
 
