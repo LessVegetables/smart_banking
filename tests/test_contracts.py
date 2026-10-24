@@ -40,7 +40,7 @@ def dump(name, value):
 
 
 def test_every_fixture_has_a_model():
-    files = {str(p.relative_to(FIXTURES)) for p in FIXTURES.rglob('*.json')}
+    files = {p.relative_to(FIXTURES).as_posix() for p in FIXTURES.rglob('*.json')}
     assert files == set(MODELS)
 
 
