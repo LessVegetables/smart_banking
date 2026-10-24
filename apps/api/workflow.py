@@ -1,24 +1,26 @@
 """Application workflow v2 (T19, SPEC §13): statuses, allowed transitions, audit log and the automatic run.
 
-    submitted -> enriching -> scoring -> offered | declined | in_review
+    submitted -> enriching -> scoring -> offered | declined | in_review | needs_data (THIN, no statement yet)
                  enriching -> declined (company not found) | in_review (required source unavailable)
     in_review -> offered | declined | needs_data   (staff, T20, staff_actions.py)
     in_review -> submitted                         (staff re-runs the automatic run, T20)
-    needs_data -> enriching                        (client sent data, T23)
+    needs_data -> enriching                        (client uploaded statements or went on without, T23)
     offered -> accepted -> documents -> signed -> conditions -> disbursed   (client and worker, T21, disbursement.py)
     offered -> expired                             (offer validity ran out)
     any status before signed -> withdrawn          (client)
 
 Every status change goes through `transition`, which refuses moves outside `TRANSITIONS` and writes an
 `ApplicationEvent`. The worker claims a `submitted` application by moving it to `enriching`, runs enrichment,
-then the pure `decide` (stop factors → scoring → offers → routing) and stores the `Decision`. See WORKFLOW.md.
+then the pure `decide` (stop factors → scoring → offers → routing) and stores the `Decision`. An application back
+from `needs_data` is `enriching` without a lease: the worker claims it too and recomputes on the stored source
+answers plus the client's statements (statements.py). See WORKFLOW.md, STATEMENTS.md.
 """
 from __future__ import annotations
 
 import asyncio
 import logging
 import time
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
 from functools import lru_cache
@@ -27,21 +29,25 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session as OrmSession
 from sqlalchemy.orm.exc import StaleDataError
 
-from apps.api.contracts import (ApplicationRequest, ApplicationStatus as S, DataQuality, Decision, ProductId, Reason,
-                                Route)
+from apps.api.contracts import (ApplicationRequest, ApplicationStatus as S, DataQuality, DataQualityTier, Decision,
+                                ProductId, Reason, Route)
 from apps.api.credit_policy import default_policy as credit_policy
 from apps.api.db import ApplicationEvent, LoanApplication, Session, now, uid
 from apps.api.fact_store import load_facts, save_facts
-from apps.api.features import data_quality_from_responses, features_from_responses
+from apps.api.features import SourcePayloads, data_quality_from_responses, features_from_responses
+from apps.api.features import data_quality as account_data_quality
 from apps.api.features import default_policy as feature_policy
 from apps.api.features.data_quality import default_policy as data_quality_policy
-from apps.api.limits import cash_flow_from_responses
+from apps.api.limits import cash_flow
 from apps.api.offers import OfferSet, generate_offers, requested_product
 from apps.api.routing import route_application, route_for
 from apps.api.scoring import FeatureSetMismatch, Scorer, default_scorer
+from apps.api.statements import (REQUESTED_STATEMENT, UploadedStatement, check_statements, parse_statements,
+                                  statement_facts, with_statements)
 from apps.api.stop_factors import evaluate_stop_factors
 from apps.sources import Enrichment, RetryPolicy, SourceClient, SourceEvent, enrich, service_from_env
 from apps.sources.enrichment import MSK
+from apps.sources.facts import build_facts
 
 log = logging.getLogger(__name__)
 
@@ -169,6 +175,40 @@ def withdraw(db: OrmSession, app: LoanApplication, *, actor: str) -> None:
     transition(db, app, S.WITHDRAWN, actor=actor, message='Клиент отозвал заявку')
 
 
+def stored_statements(app: LoanApplication) -> list[UploadedStatement] | None:
+    """None: the client hasn't answered a data request; []: went on without a statement."""
+    return None if app.statements is None else [UploadedStatement.model_validate(u) for u in app.statements]
+
+
+def _resume(db: OrmSession, app: LoanApplication, *, actor: str, message: str, data: dict) -> None:
+    """needs_data → enriching without a lease: `claim_resumed` picks it up for the worker."""
+    if S(app.status) != S.NEEDS_DATA:
+        raise IllegalTransition('Банк не запрашивал данные по этой заявке')
+    app.attempts, app.lease_until = 0, None
+    transition(db, app, S.ENRICHING, actor=actor, message=message, data=data)
+
+
+def upload_statements(db: OrmSession, app: LoanApplication, files: Sequence[tuple[str, bytes]], *, actor: str,
+                      at: datetime | None = None) -> None:
+    """The client answers a data request with statements from other banks (T23); `StatementError` refuses them."""
+    if S(app.status) != S.NEEDS_DATA:
+        raise IllegalTransition('Банк не запрашивал данные по этой заявке')
+    request = ApplicationRequest.model_validate(app.request)
+    parsed = parse_statements(files, request, at or datetime.now(MSK), stored_statements(app) or [])
+    app.statements = [*(app.statements or []), *(u.model_dump(mode='json') for u in parsed)]
+    _resume(db, app, actor=actor, message='Клиент загрузил выписки: ' + ', '.join(
+        f'{u.statement.bank_name} ({len(u.statement.months)} мес.)' for u in parsed),
+        data={'statements': [{'file_name': u.file_name, 'sha256': u.sha256, 'bank_name': u.statement.bank_name,
+                              'months': len(u.statement.months)} for u in parsed]})
+
+
+def skip_statements(db: OrmSession, app: LoanApplication, *, actor: str) -> None:
+    """The client has no statement to give: recompute as is; a THIN application then goes to the underwriter."""
+    if app.statements is None:
+        app.statements = []
+    _resume(db, app, actor=actor, message='Клиент продолжил без выписки', data={'statements': []})
+
+
 # --- The decision (stages 4–7) -----------------------------------------------------------
 
 def policy_version(data_quality: DataQuality | None) -> str:
@@ -188,11 +228,24 @@ def _strictest_offer(offer_set: OfferSet) -> tuple[int, Route] | None:
     return best
 
 
+def data_quality_for(request: ApplicationRequest, enrichment: Enrichment, statements: Sequence[UploadedStatement] | None,
+                     as_of: date) -> tuple[DataQuality | None, tuple[UploadedStatement, ...]]:
+    """The application's data quality: our account plus the statements that pass the checks (T23), and those."""
+    if enrichment.company_not_found:
+        return None, ()
+    payloads = SourcePayloads.from_responses(enrichment.responses)
+    used = check_statements(statements or (), payloads, as_of).used
+    return account_data_quality(with_statements(payloads, used), request.declared_annual_revenue), used
+
+
 def decide(request: ApplicationRequest, enrichment: Enrichment, data_quality: DataQuality | None, *,
-           as_of: date, decided_at: datetime, scorer: Scorer | None = None) -> Decision:
+           as_of: date, decided_at: datetime, scorer: Scorer | None = None,
+           statements: Sequence[UploadedStatement] | None = None) -> Decision:
     """Stop factors → scoring → offers → routing → `Decision`. Pure: same inputs, same decision.
 
     `as_of` is the day the features and stop factors are computed on; offers are valid from `decided_at`.
+    `statements`: the client's statements from other banks (T23), None when the client wasn't asked yet;
+    `data_quality` must count them (`data_quality_for`).
     """
     scorer = scorer or default_scorer()
     common = dict(application_id=request.application_id, data_quality=data_quality, requested_documents=[],
@@ -227,16 +280,26 @@ def decide(request: ApplicationRequest, enrichment: Enrichment, data_quality: Da
                         stop_factors=[], flags=flags, reapply_after=None, **empty, **common)
 
     score = scoring.score
-    cf = cash_flow_from_responses(enrichment.responses, data_quality)
-    offer_set = generate_offers(request, cf, score, route_for(score.grade, flags, data_quality),
+    # Statements join our account for the limit only; features and stop factors above read our own data.
+    payloads = SourcePayloads.from_responses(enrichment.responses)
+    check = check_statements(statements or (), payloads, as_of)
+    flags += check.flags
+    uploaded = bool(check.used)
+    cf = cash_flow(with_statements(payloads, check.used), data_quality)
+    offer_set = generate_offers(request, cf, score, route_for(score.grade, flags, data_quality, statements=uploaded),
                                 decided_at.astimezone(MSK).date())
     # Offers of one application can sit on different routes: the application takes the strictest, so one
     # staff review covers every offer it shows the client.
     strictest = _strictest_offer(offer_set)
     amount = strictest[0] if strictest else request.amount
-    routing = route_application(amount, grade=score.grade, flags=flags, data_quality=data_quality)
-    # SIMPLIFICATION: THIN goes to the underwriter (`route_data_thin`) instead of `needs_data`: there is no
-    # statement upload until T23 (cut list item 5).
+    routing = route_application(amount, grade=score.grade, flags=flags, data_quality=data_quality,
+                                statements=uploaded)
+    if data_quality is not None and data_quality.tier == DataQualityTier.THIN and statements is None:
+        # SPEC §5.1: THIN data is a data request first; the underwriter gets it after the client answers.
+        return Decision(status=S.NEEDS_DATA, route=routing.route, route_reasons=list(routing.reasons), reasons=[],
+                        stop_factors=[], flags=flags, score=score, challenger=scoring.challenger,
+                        model_version=score.model_version, matches_request=None, offers=[], counterfactuals=[],
+                        reapply_after=None, **{**common, 'requested_documents': [REQUESTED_STATEMENT]})
     if routing.route == Route.AUTO:
         status = S.OFFERED if offer_set.offers else S.DECLINED
     else:
@@ -290,6 +353,23 @@ def claim_next() -> str | None:
         return None
 
 
+def claim_resumed() -> str | None:
+    """An application back from `needs_data` (`_resume`): `enriching` without a lease. Taking the lease is the claim."""
+    try:
+        with Session.begin() as db:
+            app = db.scalar(select(LoanApplication).where(
+                LoanApplication.status == S.ENRICHING.value, LoanApplication.lease_until.is_(None),
+            ).order_by(LoanApplication.updated).limit(1))
+            if app is None:
+                return None
+            app.attempts += 1
+            app.lease_until = time.time() + LEASE_SECONDS
+            record(db, app, 'action', 'Пересчёт после ответа клиента на запрос данных', data={'attempt': app.attempts})
+            return app.id
+    except StaleDataError:
+        return None
+
+
 def _current(db: OrmSession, application_id: str, expected: S) -> LoanApplication | None:
     """The application if it is still where the run left it; a client may have withdrawn it meanwhile."""
     app = db.get(LoanApplication, application_id)
@@ -315,30 +395,52 @@ def _log_source_event(application_id: str) -> Callable[[SourceEvent], None]:
     return handler
 
 
-def run_application(application_id: str, pipeline: Pipeline) -> None:
-    """Stages 3–7 for one claimed application: enrich, store facts and data quality, decide, store."""
+def _stored_enrichment(app: LoanApplication, request: ApplicationRequest) -> Enrichment | None:
+    """The source answers of the last run, if every required source answered then."""
+    if not app.enrichment:
+        return None
+    stored = Enrichment.model_validate({**app.enrichment, 'facts': []})
+    if not stored.complete:
+        return None
+    return stored.model_copy(update={'facts': build_facts(request, stored.responses)})
+
+
+def run_application(application_id: str, pipeline: Pipeline, *, resume: bool = False) -> None:
+    """Stages 3–7 for one claimed application: enrich, store facts and data quality, decide, store.
+
+    `resume`: back from `needs_data`. The stored source answers are reused when they are complete, so the
+    client's statements don't cost another credit-bureau inquiry, which the scorecard counts against them.
+    """
     with Session() as db:
-        request = ApplicationRequest.model_validate(db.get(LoanApplication, application_id).request)
-    enrichment = asyncio.run(enrich(request, pipeline.client, policy=pipeline.retry,
-                                    on_event=_log_source_event(application_id), now=pipeline.clock))
-    dq = None if enrichment.company_not_found else \
-        data_quality_from_responses(enrichment.responses, request.declared_annual_revenue)
+        app = db.get(LoanApplication, application_id)
+        request = ApplicationRequest.model_validate(app.request)
+        statements = stored_statements(app)
+        enrichment = _stored_enrichment(app, request) if resume else None
+    reused = enrichment is not None
+    if enrichment is None:
+        enrichment = asyncio.run(enrich(request, pipeline.client, policy=pipeline.retry,
+                                        on_event=_log_source_event(application_id), now=pipeline.clock))
+    dq, used = data_quality_for(request, enrichment, statements, pipeline.as_of)
+    own_tier = data_quality_from_responses(enrichment.responses, request.declared_annual_revenue).tier \
+        if used else None
 
     with Session.begin() as db:
         if (app := _current(db, application_id, S.ENRICHING)) is None:
             return
-        save_facts(db, application_id, enrichment.facts)
+        save_facts(db, application_id, [*enrichment.facts, *statement_facts(used)])
         app.enrichment = enrichment.model_dump(mode='json', exclude={'facts'})
         app.data_quality = dq.model_dump(mode='json') if dq else None
-        record(db, app, 'action', 'Данные из источников собраны' + (f', уровень данных {dq.tier}' if dq else ''),
+        message = 'Данные из источников собраны' + (f' и выписки клиента учтены ({len(used)})' if used else '')
+        record(db, app, 'action', message + (f', уровень данных {dq.tier}' if dq else ''),
                data={'unavailable_required': enrichment.unavailable_required, 'degraded': enrichment.degraded,
-                     'company_not_found': enrichment.company_not_found, 'tier': dq.tier if dq else None})
+                     'company_not_found': enrichment.company_not_found, 'tier': dq.tier if dq else None,
+                     'statements_used': len(used), 'own_account_tier': own_tier, 'sources_reused': reused})
         if enrichment.complete:
             app.lease_until = time.time() + LEASE_SECONDS
             transition(db, app, S.SCORING)
 
     decision = decide(request, enrichment, dq, as_of=pipeline.as_of, decided_at=pipeline.clock(),
-                      scorer=pipeline.scorer)
+                      scorer=pipeline.scorer, statements=statements)
     with Session.begin() as db:
         if (app := _current(db, application_id, S.SCORING if enrichment.complete else S.ENRICHING)) is None:
             return
@@ -399,11 +501,13 @@ def expire_offers(on: date | None = None) -> int:
 
 def run_next(pipeline: Pipeline | None = None) -> bool:
     """Claim and run one application; False when the queue is empty."""
-    application_id = claim_next()
+    application_id, resume = claim_next(), False
+    if application_id is None:
+        application_id, resume = claim_resumed(), True
     if application_id is None:
         return False
     try:
-        run_application(application_id, pipeline or default_pipeline())
+        run_application(application_id, pipeline or default_pipeline(), resume=resume)
     except Exception as e:  # the run is retried; the client never sees a crashed conveyor
         log.exception('application %s run failed', application_id)
         fail(application_id, e.__class__.__name__)
@@ -455,7 +559,10 @@ def application_json(db: OrmSession, app: LoanApplication, *, staff: bool) -> di
     from apps.api.disbursement import closing_json  # disbursement imports this module
     base['closing'] = closing_json(app.closing, staff=staff)
     if not staff:
-        return {**base, 'decision': client_decision(app.decision) if app.decision else None,
+        statements = [{'file_name': u.file_name, 'bank_name': u.statement.bank_name, 'uploaded_at': u.uploaded_at,
+                       'months': [u.statement.months[0].month, u.statement.months[-1].month]}
+                      for u in stored_statements(app) or []]
+        return {**base, 'statements': statements, 'decision': client_decision(app.decision) if app.decision else None,
                 'events': [{'at': e.at, 'status': e.to_status, 'message': e.message}
                            for e in history if e.kind == 'status'],
                 # per-source progress for the "analyzing" screen (T27); error texts stay with staff
@@ -465,4 +572,4 @@ def application_json(db: OrmSession, app: LoanApplication, *, staff: bool) -> di
                for r in (app.enrichment or {}).get('responses', [])]
     return {**base, 'decision': app.decision, 'data_quality': app.data_quality, 'sources': sources,
             'facts': [f.model_dump(mode='json') for f in load_facts(db, app.id)], 'attempts': app.attempts,
-            'pending_review': app.pending_review, 'events': [event_json(e) for e in history]}
+            'pending_review': app.pending_review, 'statements': app.statements, 'events': [event_json(e) for e in history]}

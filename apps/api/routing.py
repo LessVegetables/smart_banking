@@ -2,7 +2,7 @@
 
     committee    amount over 15M, or grade D or worse with an amount over 5M
     underwriter  grade D or worse, any flag, THIN data, PARTIAL data over 1M, amount over 5M up to 15M,
-                 a required source unavailable after all retries, or no score
+                 a required source unavailable after all retries, no score, or a client's statement (T23)
     auto         grade A–C, no flags, FULL data up to 5M or PARTIAL data up to 1M; and every stop factor:
                  the decline is automatic
 
@@ -56,13 +56,14 @@ def millions(amount: int) -> str:
 
 def route_application(amount: int, *, grade: Grade | None, flags: Iterable[Reason] = (),
                       data_quality: DataQuality | None, stop_factors: Iterable[Reason] = (),
-                      unavailable_sources: Iterable[SourceId] = (),
+                      unavailable_sources: Iterable[SourceId] = (), statements: bool = False,
                       policy: RoutingPolicy = DEFAULT_POLICY) -> Routing:
     """Route an application or an offer of `amount`.
 
     `grade` is the champion's (`Scoring.score.grade`, never the challenger's); None when scoring refused
     the features (`FeatureSetMismatch`). `flags` and `stop_factors` come from `evaluate_stop_factors`,
     `data_quality` from the same call as the limit, `unavailable_sources` is `Enrichment.unavailable_required`.
+    `statements`: the data quality and the limit count statements from other banks (T23, statements.py).
     """
     flags, unavailable = tuple(flags), tuple(unavailable_sources)
     if tuple(stop_factors):
@@ -110,6 +111,11 @@ def route_application(amount: int, *, grade: Grade | None, flags: Iterable[Reaso
             f'Данные по счёту PARTIAL и сумма {rub(amount)} больше {millions(policy.auto_max_partial)}',
             data_quality.client_message)
 
+    if statements:
+        # A client document is less reliable than our own data (SPEC §5.1): a person checks it.
+        add(Route.UNDERWRITER, 'route_statement_upload',
+            'Лимит и качество данных учитывают выписки других банков: документ клиента проверяет андеррайтер')
+
     if not found:
         limit = policy.auto_max_full if tier == DataQualityTier.FULL else policy.auto_max_partial
         return Routing(Route.AUTO, (Reason(
@@ -122,8 +128,8 @@ def route_application(amount: int, *, grade: Grade | None, flags: Iterable[Reaso
 
 
 def route_for(grade: Grade | None, flags: Iterable[Reason], data_quality: DataQuality | None,
-              policy: RoutingPolicy = DEFAULT_POLICY) -> RouteFor:
+              policy: RoutingPolicy = DEFAULT_POLICY, *, statements: bool = False) -> RouteFor:
     """The route of any amount for one scored application: what `generate_offers` takes as `route_for`."""
     flags = tuple(flags)
     return lambda amount: route_application(amount, grade=grade, flags=flags, data_quality=data_quality,
-                                            policy=policy).route
+                                            statements=statements, policy=policy).route
