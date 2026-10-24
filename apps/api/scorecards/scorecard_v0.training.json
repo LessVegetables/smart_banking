@@ -1,0 +1,6 @@
+{
+  "scorecard_version": "scorecard_v0",
+  "feature_set_version": "features_v0",
+  "origin": "hand_set",
+  "note": "Not trained: bins and points are set by hand (apps/api/SCORING.md). The file has the name and keys of the training passport (apps/ml/README.md) so the scoring adapter reads both cards the same way."
+}

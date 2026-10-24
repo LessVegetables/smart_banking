@@ -1,0 +1,557 @@
+{
+  "version": "scorecard_v0",
+  "origin": "hand_set",
+  "created_at": "2026-10-24",
+  "description": "Экспертная карта: интервалы и баллы заданы вручную по SPEC §8, без обучения. Баллы интервала — насколько он надёжнее (+) или рискованнее (−) среднего. Работает модель-претендентом в теневом режиме рядом с обученной scorecard_v1. Набор признаков features_v0.",
+  "scaling": {
+    "base_points": 600.0,
+    "base_odds": 50.0,
+    "pdo": 20.0
+  },
+  "intercept_points": 564.0,
+  "features": [
+    {
+      "name": "business_age_months",
+      "label": "Возраст бизнеса",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "меньше 12 мес.",
+          "lower": null,
+          "upper": 12,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": -15.0
+        },
+        {
+          "label": "12–35 мес.",
+          "lower": 12,
+          "upper": 36,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": -5.0
+        },
+        {
+          "label": "36–83 мес.",
+          "lower": 36,
+          "upper": 84,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": 4.0
+        },
+        {
+          "label": "84 мес. и больше",
+          "lower": 84,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": 8.0
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": null,
+          "points": -5.0
+        }
+      ]
+    },
+    {
+      "name": "worst_delinquency_days_24m_company",
+      "label": "Худшая просрочка компании за 24 мес.",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "нет просрочек",
+          "lower": null,
+          "upper": 1,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": 5.0
+        },
+        {
+          "label": "1–30 дней",
+          "lower": 1,
+          "upper": 31,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": -6.0
+        },
+        {
+          "label": "31 день и больше",
+          "lower": 31,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": -20.0
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": null,
+          "points": 0.0
+        }
+      ]
+    },
+    {
+      "name": "worst_delinquency_days_24m_owner",
+      "label": "Худшая просрочка собственника за 24 мес.",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "нет просрочек",
+          "lower": null,
+          "upper": 1,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": 4.0
+        },
+        {
+          "label": "1–30 дней",
+          "lower": 1,
+          "upper": 31,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": -6.0
+        },
+        {
+          "label": "31 день и больше",
+          "lower": 31,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": -18.0
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": null,
+          "points": -3.0
+        }
+      ]
+    },
+    {
+      "name": "bki_inquiries_3m",
+      "label": "Запросы кредитной истории за 3 мес.",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "0–1",
+          "lower": null,
+          "upper": 2,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": 3.0
+        },
+        {
+          "label": "2–3",
+          "lower": 2,
+          "upper": 4,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": -3.0
+        },
+        {
+          "label": "4 и больше",
+          "lower": 4,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": -12.0
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": null,
+          "points": 0.0
+        }
+      ]
+    },
+    {
+      "name": "debt_to_revenue",
+      "label": "Долг к выручке",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "меньше 0,2",
+          "lower": null,
+          "upper": 0.2,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": 5.0
+        },
+        {
+          "label": "0,2–0,5",
+          "lower": 0.2,
+          "upper": 0.5,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": -3.0
+        },
+        {
+          "label": "0,5 и больше",
+          "lower": 0.5,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": -15.0
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": null,
+          "points": 0.0
+        }
+      ]
+    },
+    {
+      "name": "inflow_cv_12m",
+      "label": "Волатильность поступлений",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "меньше 0,15",
+          "lower": null,
+          "upper": 0.15,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": 8.0
+        },
+        {
+          "label": "0,15–0,35",
+          "lower": 0.15,
+          "upper": 0.35,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": 0.0
+        },
+        {
+          "label": "0,35 и больше",
+          "lower": 0.35,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": -15.0
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": null,
+          "points": -5.0
+        }
+      ]
+    },
+    {
+      "name": "months_without_inflows_12m",
+      "label": "Месяцы без поступлений за 12 мес.",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "0",
+          "lower": null,
+          "upper": 1,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": 3.0
+        },
+        {
+          "label": "1–2",
+          "lower": 1,
+          "upper": 3,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": -6.0
+        },
+        {
+          "label": "3 и больше",
+          "lower": 3,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": -18.0
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": null,
+          "points": -5.0
+        }
+      ]
+    },
+    {
+      "name": "balance_days_of_expenses",
+      "label": "Средний остаток в днях расходов",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "меньше 5 дней",
+          "lower": null,
+          "upper": 5,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": -10.0
+        },
+        {
+          "label": "5–14 дней",
+          "lower": 5,
+          "upper": 15,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": 0.0
+        },
+        {
+          "label": "15 дней и больше",
+          "lower": 15,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": 8.0
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": null,
+          "points": -5.0
+        }
+      ]
+    },
+    {
+      "name": "tax_payment_months_12m",
+      "label": "Месяцы с уплатой налогов за 12 мес.",
+      "kind": "numeric",
+      "bins": [
+        {
+          "label": "меньше 6",
+          "lower": null,
+          "upper": 6,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": -12.0
+        },
+        {
+          "label": "6–9",
+          "lower": 6,
+          "upper": 10,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": -4.0
+        },
+        {
+          "label": "10 и больше",
+          "lower": 10,
+          "upper": null,
+          "categories": null,
+          "missing": false,
+          "woe": null,
+          "points": 3.0
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": null,
+          "points": -5.0
+        }
+      ]
+    },
+    {
+      "name": "okved_risk_group",
+      "label": "Группа риска ОКВЭД",
+      "kind": "categorical",
+      "bins": [
+        {
+          "label": "низкая",
+          "lower": null,
+          "upper": null,
+          "categories": [
+            "low"
+          ],
+          "missing": false,
+          "woe": null,
+          "points": 4.0
+        },
+        {
+          "label": "средняя",
+          "lower": null,
+          "upper": null,
+          "categories": [
+            "medium"
+          ],
+          "missing": false,
+          "woe": null,
+          "points": 0.0
+        },
+        {
+          "label": "высокая",
+          "lower": null,
+          "upper": null,
+          "categories": [
+            "high"
+          ],
+          "missing": false,
+          "woe": null,
+          "points": -10.0
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": null,
+          "points": 0.0
+        }
+      ]
+    },
+    {
+      "name": "owner_or_director_changed_6m",
+      "label": "Смена собственника или директора за 6 мес.",
+      "kind": "categorical",
+      "bins": [
+        {
+          "label": "не менялись",
+          "lower": null,
+          "upper": null,
+          "categories": [
+            false
+          ],
+          "missing": false,
+          "woe": null,
+          "points": 1.0
+        },
+        {
+          "label": "менялись",
+          "lower": null,
+          "upper": null,
+          "categories": [
+            true
+          ],
+          "missing": false,
+          "woe": null,
+          "points": -10.0
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": null,
+          "points": 0.0
+        }
+      ]
+    },
+    {
+      "name": "negative_equity",
+      "label": "Отрицательный капитал",
+      "kind": "categorical",
+      "bins": [
+        {
+          "label": "капитал положительный",
+          "lower": null,
+          "upper": null,
+          "categories": [
+            false
+          ],
+          "missing": false,
+          "woe": null,
+          "points": 2.0
+        },
+        {
+          "label": "капитал отрицательный",
+          "lower": null,
+          "upper": null,
+          "categories": [
+            true
+          ],
+          "missing": false,
+          "woe": null,
+          "points": -15.0
+        },
+        {
+          "label": "нет данных",
+          "lower": null,
+          "upper": null,
+          "categories": null,
+          "missing": true,
+          "woe": null,
+          "points": 0.0
+        }
+      ]
+    }
+  ],
+  "grades": [
+    {
+      "grade": "A",
+      "pd_max": 0.015
+    },
+    {
+      "grade": "B",
+      "pd_max": 0.03
+    },
+    {
+      "grade": "C",
+      "pd_max": 0.06
+    },
+    {
+      "grade": "D",
+      "pd_max": 0.12
+    },
+    {
+      "grade": "E",
+      "pd_max": null
+    }
+  ]
+}
