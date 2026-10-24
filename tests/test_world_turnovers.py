@@ -7,6 +7,7 @@ from datetime import date, timedelta
 import pytest
 
 from apps.api import contracts as c
+from apps.api.features import SourcePayloads, data_quality
 from apps.world import generate_world
 from apps.world.loans import annuity, payments_by_month
 from apps.world.months import first_full_month, month_index, month_name
@@ -33,21 +34,8 @@ def _receipts(months):
     return sum(m.inflows.customers for m in months)
 
 
-def _tier(x) -> str:
-    """SPEC §5.1 data-quality tier with its thresholds, only to check the world covers every tier.
-    The real calculation is T09's."""
-    months, last12 = x.accounts.months, _last12(x)
-    fns_revenue = (x.fns.financials.revenue if x.fns.financials
-                   else x.fns.tax_return.income if x.fns.tax_return else x.annual_revenue)
-    inflows = sum(m.inflows.total for m in last12)
-    metrics = (
-        (len(months), 12, 6),
-        (_receipts(last12) / fns_revenue if fns_revenue else 0, 0.7, 0.3),
-        (_receipts(last12) / inflows if inflows else 0, 0.8, 0.6),
-        (sum(m.inflows.customers > 0 for m in last12), 10, 7),
-    )
-    worst = max(0 if value >= full else 1 if value >= partial else 2 for value, full, partial in metrics)
-    return ('FULL', 'PARTIAL', 'THIN')[worst]
+def _tier(x) -> c.DataQualityTier:
+    return data_quality(SourcePayloads.from_company(x), x.declared_annual_revenue).tier
 
 
 def test_t01_data_is_unchanged():
