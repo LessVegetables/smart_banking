@@ -22,6 +22,7 @@ class User(Base):
     name:Mapped[str]=mapped_column(String,default='Предприниматель')
     role:Mapped[str]=mapped_column(String,default='customer')
     identity:Mapped[str|None]=mapped_column(String,unique=True,nullable=True)
+    staff_position:Mapped[str|None]=mapped_column(String,nullable=True)  # staff only: underwriter | risk_manager (T20)
 class Login(Base):
     __tablename__='sessions'
     token:Mapped[str]=mapped_column(String,primary_key=True)
@@ -67,6 +68,7 @@ class LoanApplication(Base):
     decision:Mapped[dict|None]=mapped_column(JSON,nullable=True)  # the latest Decision
     offer_valid_until:Mapped[str|None]=mapped_column(String,nullable=True)  # ISO date; offered → expired after it
     selected_offer_id:Mapped[str|None]=mapped_column(String,nullable=True)
+    pending_review:Mapped[dict|None]=mapped_column(JSON,nullable=True)  # committee proposal waiting for its second signature (T20)
     attempts:Mapped[int]=mapped_column(Integer,default=0)  # automatic runs started
     lease_until:Mapped[float|None]=mapped_column(Float,nullable=True)  # worker lease, or "not before" for a retry
     created:Mapped[str]=mapped_column(String,default=now)
@@ -80,7 +82,7 @@ class ApplicationEvent(Base):
     application_id:Mapped[str]=mapped_column(ForeignKey('loan_applications.id',ondelete='CASCADE'),index=True)
     at:Mapped[str]=mapped_column(String,default=now)
     actor:Mapped[str]=mapped_column(String)  # 'system', or 'client:<user id>' / 'staff:<user id>'
-    kind:Mapped[str]=mapped_column(String)  # status | source | decision | action | error
+    kind:Mapped[str]=mapped_column(String)  # status | source | decision | action | error | review | proposal | signature
     from_status:Mapped[str|None]=mapped_column(String,nullable=True)
     to_status:Mapped[str|None]=mapped_column(String,nullable=True)
     message:Mapped[str]=mapped_column(String)

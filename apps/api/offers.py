@@ -144,6 +144,15 @@ class _Engine:
         return _Variant(kind, product, term, collateral, q, route)
 
 
+def quote_on_route(request: ApplicationRequest, cf: CashFlow, score: ScoreResult, route_for: RouteFor,
+                   product: ProductId, term_months: int, collateral, amount: int,
+                   policy: CreditPolicy | None = None) -> tuple[Quote, Route]:
+    """One variant priced at the route of its own amount, as `generate_offers` prices each offer: for a
+    staff-changed offer (T20, staff_actions.py)."""
+    engine = _Engine(request, cf, score, route_for, policy or default_policy())
+    return engine.quote(product, term_months, tuple(collateral), amount)
+
+
 def generate_offers(request: ApplicationRequest, cf: CashFlow, score: ScoreResult, route_for: RouteFor,
                     as_of: date, policy: CreditPolicy | None = None) -> OfferSet:
     """`cf` from `cash_flow_from_responses` and `score` from the champion (never the challenger);

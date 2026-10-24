@@ -13,8 +13,9 @@ def test_fact_store_round_trip_and_replace(tmp_path, monkeypatch):
     legacy_names = {'users', 'sessions', 'surveys', 'applications', 'submission_keys', 'documents', 'jobs'}
     legacy_tables = [table for table in db.Base.metadata.sorted_tables if table.name in legacy_names]
     db.Base.metadata.create_all(engine, tables=legacy_tables)
-    with Session(engine) as session, session.begin():
-        session.add(db.User(id='preserved-user', name='Existing user'))
+    with engine.begin() as connection:  # columns later migrations add to legacy tables weren't there before Alembic
+        connection.exec_driver_sql('ALTER TABLE users DROP COLUMN staff_position')  # 0004_staff_actions
+        connection.exec_driver_sql("INSERT INTO users (id, name, role) VALUES ('preserved-user', 'Existing user', 'customer')")
 
     monkeypatch.setattr(db, 'engine', engine)
     db.init_db()
@@ -55,5 +56,5 @@ def test_fresh_database_uses_baseline_migration(tmp_path, monkeypatch):
     tables = set(inspect(engine).get_table_names())
     assert {'users', 'applications', 'application_facts', 'alembic_version'} <= tables
     with engine.connect() as connection:
-        assert connection.exec_driver_sql('SELECT version_num FROM alembic_version').scalar_one() == '0003_workflow'
+        assert connection.exec_driver_sql('SELECT version_num FROM alembic_version').scalar_one() == '0004_staff_actions'
     engine.dispose()

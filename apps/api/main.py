@@ -25,7 +25,8 @@ from .personas import PERSONAS, persona_answers
 from .worker import loop, event, save_decision
 from .storage import storage
 from .assistant import explain
-from . import workflow
+from .contracts import CollateralType, ProductId
+from . import staff_actions, workflow
 
 DEMO=os.environ.get('DEMO_MODE','true').lower()=='true'
 COOKIE_SECURE=os.environ.get('COOKIE_SECURE','false').lower()=='true'
@@ -86,7 +87,7 @@ def login_response(db,user,response):
 class Input(BaseModel):model_config=ConfigDict(extra='forbid')
 class DemoLogin(Input):name:str=Field(default='Алексей',min_length=1,max_length=80)
 class TelegramLogin(Input):init_data:str=Field(max_length=10000)
-class StaffLogin(Input):password:str=Field(max_length=200)
+class StaffLogin(Input):password:str=Field(max_length=200);position:staff_actions.Position=staff_actions.Position.UNDERWRITER
 
 @app.get('/api/health')
 def health():return {'ok':True,'demo':DEMO,'rules':RULES['version']}
@@ -117,11 +118,13 @@ def telegram_login(body:TelegramLogin,response:Response,db=Depends(db_session)):
 def staff_login(body:StaffLogin,response:Response,db=Depends(db_session)):
     expected=os.environ.get('STAFF_PASSWORD','')
     if len(expected)<12 or not hmac.compare_digest(body.password,expected):raise HTTPException(403,'Неверный пароль сотрудника или доступ не настроен')
-    user=User(name='Андеррайтер',role='staff');db.add(user);db.flush()
+    # SIMPLIFICATION: one STAFF_PASSWORD for every position; the employee picks underwriter or risk manager at
+    # login (T20). A bank takes the position from its staff directory.
+    user=User(name=staff_actions.POSITION_TEXT[body.position].capitalize(),role='staff',staff_position=body.position.value);db.add(user);db.flush()
     return login_response(db,user,response)
 
 @app.get('/api/auth/me')
-def me(user=Depends(current_user)):return {'id':user.id,'name':user.name,'role':user.role}
+def me(user=Depends(current_user)):return {'id':user.id,'name':user.name,'role':user.role,'staff_position':user.staff_position}
 
 @app.post('/api/auth/logout')
 def logout(request:Request,response:Response,db=Depends(db_session)):
@@ -325,7 +328,7 @@ def review(id:str,body:Review,user=Depends(staff),db=Depends(db_session)):
     a.events=[*a.events,{'at':now(),'status':'review','message':body.comment,'actor':user.id}]
     save_decision(a,result);return application_json(a,db)
 
-# --- v2 applications (T19): statuses SPEC §13, audit log; staff actions are T20 ---
+# --- v2 applications (T19): statuses SPEC §13, audit log; staff actions (T20) below ---
 class V2Submission(Input):idempotency_key:str=Field(min_length=8,max_length=200);request:dict[str,Any]
 class V2Revision(Input):revision:int
 class V2Accept(V2Revision):offer_id:str=Field(min_length=1,max_length=200)
@@ -380,6 +383,46 @@ def withdraw_v2(id:str,body:V2Revision,user=Depends(current_user),db=Depends(db_
     try:workflow.withdraw(db,a,actor=workflow.actor_of(user))
     except workflow.IllegalTransition as e:raise HTTPException(409,str(e))
     db.flush();return workflow.application_json(db,a,staff=False)
+
+# --- v2 staff actions (T20): review with a reason code, committee with two signatures ---
+class V2OfferChange(Input):
+    amount:int=Field(gt=0,le=1_000_000_000);term_months:int=Field(ge=1,le=120)
+    product:ProductId|None=None;collateral:list[CollateralType]|None=None
+class V2Review(V2Revision):
+    action:staff_actions.Action;reason_code:str=Field(max_length=100);comment:str=Field(max_length=2000)
+    offer_ids:list[str]|None=Field(default=None,max_length=4);changes:list[V2OfferChange]=Field(default=[],max_length=3)
+    documents:list[str]=Field(default=[],max_length=10)
+class V2Sign(V2Revision):approve:bool;comment:str=Field(max_length=2000);reason_code:str|None=Field(default=None,max_length=100)
+
+def staff_v2(db,id,revision):
+    a=db.get(LoanApplication,id)
+    if not a:raise HTTPException(404,'Заявка не найдена')
+    if a.revision!=revision:raise HTTPException(409,'Заявка изменилась. Обновите её.')
+    return a
+
+def staff_action(a,db,run):
+    try:outcome=run()
+    except workflow.IllegalTransition as e:raise HTTPException(409,str(e))
+    except staff_actions.StaffActionError as e:raise HTTPException(422,str(e))
+    db.flush();return {'outcome':outcome,'application':workflow.application_json(db,a,staff=True)}
+
+@app.get('/api/v2/staff/reason-codes')
+def reason_codes_v2(user=Depends(staff)):return staff_actions.reason_codes()
+
+@app.get('/api/v2/staff/overrides')
+def overrides_v2(user=Depends(staff),db=Depends(db_session)):return staff_actions.override_stats(db)
+
+@app.post('/api/v2/applications/{id}/review')
+def review_v2(id:str,body:V2Review,user=Depends(staff),db=Depends(db_session)):
+    a=staff_v2(db,id,body.revision)
+    changes=[staff_actions.OfferChange(**c.model_dump()) for c in body.changes]
+    return staff_action(a,db,lambda:staff_actions.review(db,a,staff_actions.staff_of(user),body.action,body.reason_code,body.comment,
+                                                         offer_ids=body.offer_ids,changes=changes,documents=body.documents))
+
+@app.post('/api/v2/applications/{id}/review/sign')
+def sign_v2(id:str,body:V2Sign,user=Depends(staff),db=Depends(db_session)):
+    a=staff_v2(db,id,body.revision)
+    return staff_action(a,db,lambda:staff_actions.sign(db,a,staff_actions.staff_of(user),approve=body.approve,comment=body.comment,reason_code=body.reason_code))
 
 class Message(Input):message:str=Field(min_length=1,max_length=1000);question_id:str|None=None;application_id:str|None=None
 @app.post('/api/assistant/messages')

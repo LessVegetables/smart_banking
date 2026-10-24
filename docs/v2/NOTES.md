@@ -28,13 +28,6 @@ Everything one task leaves for another lives here, filed under the task that has
 - T14 emits `source_unavailable_fns`, `source_unavailable_fssp` and `source_unavailable_arbitration` flags. Apply a score penalty for each degraded source after the econ team defines penalty values; no such values exist in the current policy. (`apps/api/stop_factors.py`)
   - Not handled in T15: the values belong in `config/` (shared-folder PR, econ team). Then apply them in `Scorer.score` (`apps/api/scoring.py`) and show each penalty as its own row in `ScoreResult.contributions`, so points still add up. (T15)
 
-## T20 — staff actions
-
-- An underwriter approves only within their authority (SPEC §11): re-route every staff-changed offer with `route_application(new_amount, ...)` (`apps/api/routing.py`) and require the committee's two signatures when it returns `committee` (e.g. above 15M ₽, or grade D/E above 5M ₽). (from T18)
-- Change statuses only through `transition(db, app, to, actor=actor_of(user), message=comment)` (`apps/api/workflow.py`, `apps/api/WORKFLOW.md`): it checks SPEC §13 and writes the audit event. Put a staff-built `Decision` through `store_decision(db, app, decision, actor=...)`; it sets `offer_valid_until` when the status is `offered`. Re-date `Offer.valid_until` to the approval day: the engine dates offers from its own run. (from T19)
-- `in_review` comes in three shapes: offers computed on an underwriter/committee route (approve or change them); no offers (grade D, flags, THIN, score unavailable); `decision = null` after three failed automatic runs (`error` events in the log). (from T19)
-- `route_source_unavailable` needs a "re-run enrichment" action, but `in_review → submitted` isn't in `TRANSITIONS`. Add it (with an audit reason) or go through `needs_data → enriching`; `run_application` expects a claimed `enriching` application. (from T19)
-
 ## T21 — documents, signing, disbursement
 
 - `accepted → documents → signed → conditions → disbursed` is in `TRANSITIONS` (`apps/api/workflow.py`); move through `transition(...)`. The chosen offer is `LoanApplication.selected_offer_id`, its terms in `decision['offers']`. Withdrawal is allowed up to `documents`, not after `signed`. (from T19)
@@ -48,6 +41,7 @@ Everything one task leaves for another lives here, filed under the task that has
 
 - `cash_flow` (`apps/api/limits.py`) reads only our own account. For an uploaded statement to raise the limit (SPEC §5.1), decide how its operating flow joins ours, then recompute through `cash_flow` with the recomputed tier. (from T16)
 - `data_quality` reads only our own account statement. Decide how an uploaded statement changes the metrics (most likely coverage: add its operating inflows to ours, at the lower trust level) and recompute through the same function. (from T09)
+- Staff `request_data` (T20, `apps/api/staff_actions.py`) already moves `in_review → needs_data` with `Decision.requested_documents`; nothing moves the application on from there yet. The upload should go `needs_data → enriching` and re-run the engine. (from T20)
 - `THIN` goes to `in_review` (`route_data_thin`) as a `# SIMPLIFICATION:` in `decide` (`apps/api/workflow.py`). With uploads, return status `needs_data` with `requested_documents` instead, and after the upload move `needs_data → enriching` and recompute; `run_application` expects a claimed `enriching` application, so add a claim path for it. (from T18, T19)
 
 ## T25 — ИНН entry and consents
@@ -77,7 +71,14 @@ Everything one task leaves for another lives here, filed under the task that has
 - Limit breakdown: every `LimitConstraint` carries its `inputs` and `note`; the `leverage` note says when the revenue came from our account because ФНС has none. `PriceBreakdown` components add up to the rate. (from T16, `apps/api/LIMITS.md`)
 - Our own БКИ request doesn't appear in the report. If the dossier should show it, ask track 1 to add it in the БКИ adapter (`apps/sources/`). (from T06)
 - "Почему заявка пришла сюда" is `Decision.route_reasons[].staff_text`, one row per condition; the code says which matrix row fired (`apps/api/ROUTING.md`). `Decision` doesn't store each reason's own route (`Routing.routes` does): derive it from the code table if the dossier needs it. (from T18)
+- Staff actions are in the audit log as `review`, `proposal` and `signature` events with the reason code, comment, position and `override`; `pending_review` is a committee decision waiting for its second signature (`apps/api/STAFF_ACTIONS.md`). Staff reasons are `Decision.reasons` with code `staff_<reason code>`. (from T20)
 - `GET /api/v2/applications/{id}` as staff returns `decision`, `data_quality`, `sources` (envelope per source: status, timestamps, latency, attempts, error), `facts` (fact store) and the full `events`; `GET .../events` is the audit log alone (`apps/api/WORKFLOW.md`). Full source payloads are in `LoanApplication.enrichment` if the dossier needs them. (from T19)
+
+## T31 — staff actions UI
+
+- API: `POST /api/v2/applications/{id}/review` and `.../review/sign`, codes from `GET /api/v2/staff/reason-codes` (per action, plus `reject` for turning a committee proposal down), stats from `GET /api/v2/staff/overrides` (`apps/api/STAFF_ACTIONS.md`). Send `revision`; 409 = stale or waiting for a signature, 422 = text to show as is (e.g. "сумма выше лимита, доступно до …"). (from T20)
+- `outcome: proposed` means the committee: the application stays `in_review` with `pending_review` (proposal, `decision` to sign, `signatures`). The second signer must be the other position and another user. Staff log in with `POST /api/auth/staff` `{"password", "position": "underwriter" | "risk_manager"}`; `GET /api/auth/me` returns `staff_position`. To demo both signatures, use two browser profiles: the session is one cookie. (from T20)
+- The v1 staff screen (`/api/staff/reviews`) still serves v1 applications only; the v2 queue is `GET /api/v2/applications?status=in_review`. (from T20)
 
 ## T32 — risk-manager page
 
@@ -112,3 +113,5 @@ Everything one task leaves for another lives here, filed under the task that has
 - Reapply date after an economic decline is the same 90 days for every reason. Per-reason dates (THIN: when history reaches the `FULL` bound; leverage: when the loan closes) need policy values from the econ team. After a stop factor `decide` (`apps/api/workflow.py`) sets no reapply date at all, though `decision_declined.json` shows one. (from T17, T19)
 - The SPEC §11 authority matrix is hard-coded in `apps/api/routing.py` as the `# SIMPLIFICATION:` `RoutingPolicy` defaults (auto up to 5M ₽ `FULL` / 1M ₽ `PARTIAL`, underwriter up to 15M ₽, auto grades A–C, committee for D/E above 5M ₽). Proposed: a shared-folder PR adding a `routing` block to `config/credit_policy.json` and `CreditPolicy` (econ team owns the values; also confirm grade E = D), then build `RoutingPolicy` from it. (from T18)
 - `Decision.policy_version` is one string, but a decision is built on three policies; `decide` writes `credit=<v>;data_quality=<v>;features=<v>` (`policy_version` in `apps/api/workflow.py`). Proposed: a shared-folder PR replacing it with separate fields (or a `{credit, data_quality, features}` object). (from T16, T19)
+- Staff reason codes are `# SIMPLIFICATION:` constants `REASON_CODES` / `REJECT_REASON_CODES` in `apps/api/staff_actions.py`. Proposed: a shared-folder PR moving them into `config/` as a versioned directory (econ team and risk owners agree the list). (from T20)
+- Staff can't approve more than the computed limit: `Offer` requires `amount <= limit.limit`, so `change` refuses it (422). If underwriters should be able to go above the limit with a reason code, that needs a contract change (e.g. an override field on `Offer` or `LimitBreakdown`). (from T20)

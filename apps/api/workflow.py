@@ -2,7 +2,8 @@
 
     submitted -> enriching -> scoring -> offered | declined | in_review
                  enriching -> declined (company not found) | in_review (required source unavailable)
-    in_review -> offered | declined | needs_data   (staff, T20)
+    in_review -> offered | declined | needs_data   (staff, T20, staff_actions.py)
+    in_review -> submitted                         (staff re-runs the automatic run, T20)
     needs_data -> enriching                        (client sent data, T23)
     offered -> accepted -> documents -> signed -> conditions -> disbursed   (client; T21 from documents on)
     offered -> expired                             (offer validity ran out)
@@ -52,7 +53,8 @@ TRANSITIONS: dict[S, frozenset[S]] = {
     S.ENRICHING: frozenset({S.SCORING, S.NEEDS_DATA, S.DECLINED, S.IN_REVIEW, S.SUBMITTED, S.WITHDRAWN}),
     S.SCORING: frozenset({S.OFFERED, S.DECLINED, S.IN_REVIEW, S.NEEDS_DATA, S.SUBMITTED, S.WITHDRAWN}),
     S.NEEDS_DATA: frozenset({S.ENRICHING, S.WITHDRAWN}),
-    S.IN_REVIEW: frozenset({S.OFFERED, S.DECLINED, S.NEEDS_DATA, S.WITHDRAWN}),
+    # in_review -> submitted: staff re-run the automatic run, e.g. once a required source is back (T20).
+    S.IN_REVIEW: frozenset({S.OFFERED, S.DECLINED, S.NEEDS_DATA, S.SUBMITTED, S.WITHDRAWN}),
     S.OFFERED: frozenset({S.ACCEPTED, S.EXPIRED, S.WITHDRAWN}),
     S.ACCEPTED: frozenset({S.DOCUMENTS, S.WITHDRAWN}),
     S.DOCUMENTS: frozenset({S.SIGNED, S.WITHDRAWN}),
@@ -461,4 +463,4 @@ def application_json(db: OrmSession, app: LoanApplication, *, staff: bool) -> di
                for r in (app.enrichment or {}).get('responses', [])]
     return {**base, 'decision': app.decision, 'data_quality': app.data_quality, 'sources': sources,
             'facts': [f.model_dump(mode='json') for f in load_facts(db, app.id)], 'attempts': app.attempts,
-            'events': [event_json(e) for e in history]}
+            'pending_review': app.pending_review, 'events': [event_json(e) for e in history]}
