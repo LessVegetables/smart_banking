@@ -1,0 +1,618 @@
+{
+  "scorecard_version": "scorecard_v1",
+  "feature_set_version": "features_v0",
+  "world": {
+    "generator_version": "world-t06-1",
+    "seed": 42,
+    "n": 5000,
+    "as_of": "2026-10-01",
+    "outcomes_version": "world-outcomes-v1"
+  },
+  "samples": [
+    {
+      "name": "train",
+      "companies": 3492,
+      "defaults": 234,
+      "default_rate": 0.067
+    },
+    {
+      "name": "holdout",
+      "companies": 1508,
+      "defaults": 111,
+      "default_rate": 0.0736
+    }
+  ],
+  "thresholds": {
+    "psi_watch": 0.1,
+    "psi_shift": 0.25,
+    "confidence": 0.95
+  },
+  "gini": {
+    "holdout": 0.4572,
+    "holdout_ci_low": 0.3476,
+    "holdout_ci_high": 0.5668,
+    "train": 0.563,
+    "true_pd_ceiling": 0.6081
+  },
+  "cap": [
+    {
+      "companies_share": 0.0,
+      "defaults_share": 0.0
+    },
+    {
+      "companies_share": 0.05,
+      "defaults_share": 0.2342
+    },
+    {
+      "companies_share": 0.1,
+      "defaults_share": 0.3604
+    },
+    {
+      "companies_share": 0.15,
+      "defaults_share": 0.4234
+    },
+    {
+      "companies_share": 0.2,
+      "defaults_share": 0.4865
+    },
+    {
+      "companies_share": 0.25,
+      "defaults_share": 0.5135
+    },
+    {
+      "companies_share": 0.3,
+      "defaults_share": 0.5766
+    },
+    {
+      "companies_share": 0.35,
+      "defaults_share": 0.6306
+    },
+    {
+      "companies_share": 0.4,
+      "defaults_share": 0.6937
+    },
+    {
+      "companies_share": 0.45,
+      "defaults_share": 0.7117
+    },
+    {
+      "companies_share": 0.5,
+      "defaults_share": 0.7748
+    },
+    {
+      "companies_share": 0.55,
+      "defaults_share": 0.8198
+    },
+    {
+      "companies_share": 0.6,
+      "defaults_share": 0.8468
+    },
+    {
+      "companies_share": 0.65,
+      "defaults_share": 0.8829
+    },
+    {
+      "companies_share": 0.7,
+      "defaults_share": 0.9009
+    },
+    {
+      "companies_share": 0.75,
+      "defaults_share": 0.9279
+    },
+    {
+      "companies_share": 0.8,
+      "defaults_share": 0.9459
+    },
+    {
+      "companies_share": 0.85,
+      "defaults_share": 0.964
+    },
+    {
+      "companies_share": 0.9,
+      "defaults_share": 0.973
+    },
+    {
+      "companies_share": 0.95,
+      "defaults_share": 0.982
+    },
+    {
+      "companies_share": 1.0,
+      "defaults_share": 1.0
+    }
+  ],
+  "calibration": {
+    "predicted_pd": 0.0716,
+    "actual_rate": 0.0736,
+    "grades": [
+      {
+        "grade": "A",
+        "pd_min": 0.0,
+        "pd_max": 0.015,
+        "companies": 343,
+        "companies_share": 0.2275,
+        "defaults": 6,
+        "predicted_pd": 0.0088,
+        "actual_rate": 0.0175,
+        "actual_ci_low": 0.008,
+        "actual_ci_high": 0.0376,
+        "predicted_vs_actual": "within"
+      },
+      {
+        "grade": "B",
+        "pd_min": 0.015,
+        "pd_max": 0.03,
+        "companies": 289,
+        "companies_share": 0.1916,
+        "defaults": 11,
+        "predicted_pd": 0.0217,
+        "actual_rate": 0.0381,
+        "actual_ci_low": 0.0214,
+        "actual_ci_high": 0.0669,
+        "predicted_vs_actual": "within"
+      },
+      {
+        "grade": "C",
+        "pd_min": 0.03,
+        "pd_max": 0.06,
+        "companies": 288,
+        "companies_share": 0.191,
+        "defaults": 19,
+        "predicted_pd": 0.0424,
+        "actual_rate": 0.066,
+        "actual_ci_low": 0.0426,
+        "actual_ci_high": 0.1007,
+        "predicted_vs_actual": "below"
+      },
+      {
+        "grade": "D",
+        "pd_min": 0.06,
+        "pd_max": 0.12,
+        "companies": 285,
+        "companies_share": 0.189,
+        "defaults": 21,
+        "predicted_pd": 0.0862,
+        "actual_rate": 0.0737,
+        "actual_ci_low": 0.0487,
+        "actual_ci_high": 0.11,
+        "predicted_vs_actual": "within"
+      },
+      {
+        "grade": "E",
+        "pd_min": 0.12,
+        "pd_max": null,
+        "companies": 303,
+        "companies_share": 0.2009,
+        "defaults": 54,
+        "predicted_pd": 0.2043,
+        "actual_rate": 0.1782,
+        "actual_ci_low": 0.1392,
+        "actual_ci_high": 0.2253,
+        "predicted_vs_actual": "within"
+      }
+    ]
+  },
+  "psi_grades": {
+    "name": "grade",
+    "label": "Грейд",
+    "value": 0.0038,
+    "status": "stable",
+    "buckets": [
+      {
+        "label": "A",
+        "expected_share": 0.236,
+        "actual_share": 0.2275,
+        "contribution": 0.0003
+      },
+      {
+        "label": "B",
+        "expected_share": 0.1919,
+        "actual_share": 0.1916,
+        "contribution": 0.0
+      },
+      {
+        "label": "C",
+        "expected_share": 0.203,
+        "actual_share": 0.191,
+        "contribution": 0.0007
+      },
+      {
+        "label": "D",
+        "expected_share": 0.1913,
+        "actual_share": 0.189,
+        "contribution": 0.0
+      },
+      {
+        "label": "E",
+        "expected_share": 0.1778,
+        "actual_share": 0.2009,
+        "contribution": 0.0028
+      }
+    ]
+  },
+  "psi_points": {
+    "name": "points",
+    "label": "Баллы",
+    "value": 0.0074,
+    "status": "stable",
+    "buckets": [
+      {
+        "label": "меньше 537,2",
+        "expected_share": 0.0999,
+        "actual_share": 0.1101,
+        "contribution": 0.001
+      },
+      {
+        "label": "537,2–548,1",
+        "expected_share": 0.0991,
+        "actual_share": 0.1134,
+        "contribution": 0.0019
+      },
+      {
+        "label": "548,1–558,9",
+        "expected_share": 0.1008,
+        "actual_share": 0.1034,
+        "contribution": 0.0001
+      },
+      {
+        "label": "558,9–570",
+        "expected_share": 0.0997,
+        "actual_share": 0.0869,
+        "contribution": 0.0018
+      },
+      {
+        "label": "570–579,5",
+        "expected_share": 0.1005,
+        "actual_share": 0.0928,
+        "contribution": 0.0006
+      },
+      {
+        "label": "579,5–590,4",
+        "expected_share": 0.0988,
+        "actual_share": 0.0962,
+        "contribution": 0.0001
+      },
+      {
+        "label": "590,4–600,7",
+        "expected_share": 0.1008,
+        "actual_share": 0.1081,
+        "contribution": 0.0005
+      },
+      {
+        "label": "600,7–612,4",
+        "expected_share": 0.0968,
+        "actual_share": 0.0915,
+        "contribution": 0.0003
+      },
+      {
+        "label": "612,4–626,6",
+        "expected_share": 0.1014,
+        "actual_share": 0.0915,
+        "contribution": 0.001
+      },
+      {
+        "label": "626,6 и больше",
+        "expected_share": 0.1022,
+        "actual_share": 0.1061,
+        "contribution": 0.0001
+      }
+    ]
+  },
+  "psi_features": [
+    {
+      "name": "inflow_cv_12m",
+      "label": "Волатильность поступлений",
+      "value": 0.0042,
+      "status": "stable",
+      "buckets": [
+        {
+          "label": "меньше 0,142",
+          "expected_share": 0.3674,
+          "actual_share": 0.3714,
+          "contribution": 0.0
+        },
+        {
+          "label": "0,142–0,174",
+          "expected_share": 0.1438,
+          "actual_share": 0.1472,
+          "contribution": 0.0001
+        },
+        {
+          "label": "0,174–0,348",
+          "expected_share": 0.2806,
+          "actual_share": 0.2818,
+          "contribution": 0.0
+        },
+        {
+          "label": "0,348–0,415",
+          "expected_share": 0.0467,
+          "actual_share": 0.055,
+          "contribution": 0.0014
+        },
+        {
+          "label": "0,415 и больше",
+          "expected_share": 0.0934,
+          "actual_share": 0.0889,
+          "contribution": 0.0002
+        },
+        {
+          "label": "нет данных",
+          "expected_share": 0.0682,
+          "actual_share": 0.0557,
+          "contribution": 0.0025
+        }
+      ]
+    },
+    {
+      "name": "cash_withdrawal_share",
+      "label": "Доля снятия наличных",
+      "value": 0.0063,
+      "status": "stable",
+      "buckets": [
+        {
+          "label": "меньше 0,012",
+          "expected_share": 0.1755,
+          "actual_share": 0.195,
+          "contribution": 0.002
+        },
+        {
+          "label": "0,012–0,016",
+          "expected_share": 0.321,
+          "actual_share": 0.3282,
+          "contribution": 0.0002
+        },
+        {
+          "label": "0,016–0,098",
+          "expected_share": 0.3411,
+          "actual_share": 0.3223,
+          "contribution": 0.0011
+        },
+        {
+          "label": "0,098–0,152",
+          "expected_share": 0.0467,
+          "actual_share": 0.0464,
+          "contribution": 0.0
+        },
+        {
+          "label": "0,152 и больше",
+          "expected_share": 0.0475,
+          "actual_share": 0.0524,
+          "contribution": 0.0005
+        },
+        {
+          "label": "нет данных",
+          "expected_share": 0.0682,
+          "actual_share": 0.0557,
+          "contribution": 0.0025
+        }
+      ]
+    },
+    {
+      "name": "balance_days_of_expenses",
+      "label": "Средний остаток, дней расходов",
+      "value": 0.0093,
+      "status": "stable",
+      "buckets": [
+        {
+          "label": "меньше 7,7",
+          "expected_share": 0.2294,
+          "actual_share": 0.2666,
+          "contribution": 0.0056
+        },
+        {
+          "label": "7,7–8,5",
+          "expected_share": 0.0501,
+          "actual_share": 0.0504,
+          "contribution": 0.0
+        },
+        {
+          "label": "8,5–10,1",
+          "expected_share": 0.0908,
+          "actual_share": 0.0915,
+          "contribution": 0.0
+        },
+        {
+          "label": "10,1–17,2",
+          "expected_share": 0.2806,
+          "actual_share": 0.2686,
+          "contribution": 0.0005
+        },
+        {
+          "label": "17,2 и больше",
+          "expected_share": 0.2809,
+          "actual_share": 0.2672,
+          "contribution": 0.0007
+        },
+        {
+          "label": "нет данных",
+          "expected_share": 0.0682,
+          "actual_share": 0.0557,
+          "contribution": 0.0025
+        }
+      ]
+    },
+    {
+      "name": "payroll_payment_months_12m",
+      "label": "Месяцев с выплатой зарплаты",
+      "value": 0.0082,
+      "status": "stable",
+      "buckets": [
+        {
+          "label": "10 и меньше",
+          "expected_share": 0.3078,
+          "actual_share": 0.2891,
+          "contribution": 0.0012
+        },
+        {
+          "label": "11",
+          "expected_share": 0.0793,
+          "actual_share": 0.0988,
+          "contribution": 0.0043
+        },
+        {
+          "label": "12 и больше",
+          "expected_share": 0.5447,
+          "actual_share": 0.5564,
+          "contribution": 0.0002
+        },
+        {
+          "label": "нет данных",
+          "expected_share": 0.0682,
+          "actual_share": 0.0557,
+          "contribution": 0.0025
+        }
+      ]
+    },
+    {
+      "name": "worst_delinquency_days_24m_company",
+      "label": "Худшая просрочка компании, дней",
+      "value": 0.0028,
+      "status": "stable",
+      "buckets": [
+        {
+          "label": "61 и меньше",
+          "expected_share": 0.2274,
+          "actual_share": 0.2414,
+          "contribution": 0.0008
+        },
+        {
+          "label": "62 и больше",
+          "expected_share": 0.012,
+          "actual_share": 0.0166,
+          "contribution": 0.0015
+        },
+        {
+          "label": "нет данных",
+          "expected_share": 0.7606,
+          "actual_share": 0.742,
+          "contribution": 0.0005
+        }
+      ]
+    },
+    {
+      "name": "limit_utilization",
+      "label": "Использование лимитов",
+      "value": 0.0004,
+      "status": "stable",
+      "buckets": [
+        {
+          "label": "меньше 0,211",
+          "expected_share": 0.1755,
+          "actual_share": 0.1744,
+          "contribution": 0.0
+        },
+        {
+          "label": "0,211–0,312",
+          "expected_share": 0.0871,
+          "actual_share": 0.0849,
+          "contribution": 0.0001
+        },
+        {
+          "label": "0,312–0,542",
+          "expected_share": 0.1758,
+          "actual_share": 0.1704,
+          "contribution": 0.0002
+        },
+        {
+          "label": "0,542–0,786",
+          "expected_share": 0.118,
+          "actual_share": 0.12,
+          "contribution": 0.0
+        },
+        {
+          "label": "0,786 и больше",
+          "expected_share": 0.0298,
+          "actual_share": 0.0305,
+          "contribution": 0.0
+        },
+        {
+          "label": "нет данных",
+          "expected_share": 0.4138,
+          "actual_share": 0.4198,
+          "contribution": 0.0001
+        }
+      ]
+    },
+    {
+      "name": "business_age_months",
+      "label": "Возраст бизнеса, мес.",
+      "value": 0.0007,
+      "status": "stable",
+      "buckets": [
+        {
+          "label": "14 и меньше",
+          "expected_share": 0.1844,
+          "actual_share": 0.1777,
+          "contribution": 0.0002
+        },
+        {
+          "label": "15–29",
+          "expected_share": 0.2068,
+          "actual_share": 0.2122,
+          "contribution": 0.0001
+        },
+        {
+          "label": "30–62",
+          "expected_share": 0.2569,
+          "actual_share": 0.2626,
+          "contribution": 0.0001
+        },
+        {
+          "label": "63–86",
+          "expected_share": 0.0994,
+          "actual_share": 0.1021,
+          "contribution": 0.0001
+        },
+        {
+          "label": "87 и больше",
+          "expected_share": 0.2526,
+          "actual_share": 0.2454,
+          "contribution": 0.0002
+        },
+        {
+          "label": "нет данных",
+          "expected_share": 0.0,
+          "actual_share": 0.0,
+          "contribution": 0.0
+        }
+      ]
+    },
+    {
+      "name": "margin",
+      "label": "Маржинальность",
+      "value": 0.0075,
+      "status": "stable",
+      "buckets": [
+        {
+          "label": "меньше 0,008",
+          "expected_share": 0.1103,
+          "actual_share": 0.1346,
+          "contribution": 0.0049
+        },
+        {
+          "label": "0,008–0,056",
+          "expected_share": 0.1532,
+          "actual_share": 0.1645,
+          "contribution": 0.0008
+        },
+        {
+          "label": "0,056 и больше",
+          "expected_share": 0.1836,
+          "actual_share": 0.1771,
+          "contribution": 0.0002
+        },
+        {
+          "label": "нет данных",
+          "expected_share": 0.553,
+          "actual_share": 0.5239,
+          "contribution": 0.0016
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Отложенная выборка — случайная часть того же среза мира, что и обучающая, а не более поздний период (out-of-time). Поэтому Gini на ней ближе к обучающему, чем было бы в реальности.",
+    "PSI сравнивает отложенную выборку с обучающей. При случайном разбиении он должен быть около нуля: это проверка, что выборки сопоставимы, а не мониторинг потока заявок.",
+    "Карта откалибрована на долю дефолтов обучающей выборки. Если в отложенной выборке дефолтов случайно больше, прогнозная PD в грейдах оказывается ниже фактической доли; карту мы не перекалибровываем.",
+    "Модель обучена и проверена на синтетических данных: её качество доказывает работу конвейера обучения, а не реальный риск (SPEC §15)."
+  ]
+}
