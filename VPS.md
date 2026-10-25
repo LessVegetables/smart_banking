@@ -71,7 +71,7 @@ docker compose --env-file .env.vps -f compose.vps.yaml stop
 
 `compose.yaml` рассчитан на локальный запуск и задаёт `APP_ORIGIN=http://127.0.0.1:8000`. За nginx браузер присылает `Origin: https://etobank.ru`, и API отвечает 403 на любой изменяющий запрос. Поэтому стек запускается вместе с `deploy/nginx/compose.nginx.yaml`, который берёт `APP_ORIGIN` и `COOKIE_SECURE` из `.env`.
 
-1. DNS: записи A (и AAAA, если есть IPv6) для `etobank.ru` указывают на сервер.
+1. DNS: записи A (и AAAA, если есть IPv6) для `etobank.ru` и `умныйкредитныйкабинет.рф` указывают на сервер.
 2. `.env` в папке с кодом: `python3 scripts/init_env.py` создаёт его со случайными `STAFF_PASSWORD` и `POSTGRES_PASSWORD` (или `cp .env.example .env` и задайте их сами). Затем в `.env`:
 
    ```dotenv
@@ -90,7 +90,10 @@ docker compose --env-file .env.vps -f compose.vps.yaml stop
    ```bash
    sudo apt install nginx certbot python3-certbot-nginx
    sudo certbot certonly --nginx -d etobank.ru --deploy-hook "systemctl reload nginx"
+   sudo certbot certonly --nginx -d xn--80achddpccdgernff2bzbib6ni.xn--p1ai --deploy-hook "systemctl reload nginx"
    ```
+
+   Второй сертификат — для `умныйкредитныйкабинет.рф`: certbot и nginx принимают кириллический домен только в punycode.
 
    `certonly` только получает сертификат и не меняет конфиги nginx. Продление выполняет таймер certbot; после продления nginx перезагружается.
 
@@ -105,7 +108,7 @@ docker compose --env-file .env.vps -f compose.vps.yaml stop
 
 После этого кабинет — https://etobank.ru/, рабочее место — https://etobank.ru/staff, mini app — https://etobank.ru/mini/. Конфиг проверен `nginx -t` на версиях 1.18, 1.24 и 1.27; на 1.25 и новее nginx предупреждает, что `listen … http2` устарел, — это не ошибка (можно заменить на `listen 443 ssl;` и `http2 on;`).
 
-Что делает конфиг: HTTP → HTTPS, TLS 1.2–1.3, HSTS, gzip, тело запроса до 12 МБ (загрузка выписок — до 5 файлов по 2 МБ), заголовки `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`. Заголовка `X-Frame-Options` нет намеренно: веб-версия Telegram открывает mini app во фрейме.
+Что делает конфиг: `умныйкредитныйкабинет.рф` (по HTTP и HTTPS) перенаправляет на `https://etobank.ru` с тем же путём и строкой запроса — `/staff?utm_source=tg` открывает `https://etobank.ru/staff?utm_source=tg`; HTTP → HTTPS, TLS 1.2–1.3, HSTS, gzip, тело запроса до 12 МБ (загрузка выписок — до 5 файлов по 2 МБ), заголовки `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`. Заголовка `X-Frame-Options` нет намеренно: веб-версия Telegram открывает mini app во фрейме.
 
 Управление — те же команды Compose с двумя файлами:
 
