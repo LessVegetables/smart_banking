@@ -9,7 +9,7 @@ const inProgress=new Set(['submitted','enriching','scoring']);
 const steps=[{id:'enriching',label:'Собираем данные бизнеса'},{id:'scoring',label:'Рассчитываем условия'}];
 const productNames:Record<string,string>={overdraft:'Овердрафт',working_capital:'Кредит на оборотные средства',investment:'Инвестиционный кредит',credit_line:'Кредитная линия'};
 const limitNames:Record<string,string>={cash_flow:'Платёжеспособность бизнеса',leverage:'Подтверждённая выручка',collateral:'Обеспечение',turnover:'Оборот по счёту',product_max:'Максимум по продукту',requested:'Запрошенная сумма'};
-const collateralNames:Record<string,string>={owner_guarantee:'Поручительство собственника',equipment_pledge:'Залог оборудования',msp_guarantee:'Гарантия Корпорации МСП'};
+const collateralNames:Record<string,string>={owner_guarantee:'Поручительство владельца бизнеса',equipment_pledge:'Залог оборудования',msp_guarantee:'Гарантия Корпорации МСП'};
 
 function latestBySource(sources:V2SourceProgress[]){const latest=new Map<string,V2SourceProgress>();for(const source of sources){const old=latest.get(source.source);if(!old||source.at>=old.at||source.attempt>=old.attempt)latest.set(source.source,source);}return [...latest.values()];}
 function decisionHeading(app:V2Application){if(app.status==='offered')return 'Подобрали варианты финансирования';if(app.status==='needs_data')return 'Нужно дополнить данные';if(app.status==='in_review')return 'Заявка передана специалисту';if(app.status==='declined')return 'По заявке нет предложения';if(['accepted','documents'].includes(app.status))return 'Предложение принято';return app.status_text;}
@@ -35,7 +35,7 @@ export default function ApplicationAnalysis({applicationId,onContinue}:{applicat
   </>:<>
    <section className="card analysis-result"><span className="icon-tile red"><CheckCircle2 size={24}/></span><p className="eyebrow">РЕЗУЛЬТАТ РАССМОТРЕНИЯ</p><h1>{app?decisionHeading(app):'Результат готов'}<span className="hello-dot">.</span></h1><p className="lead">{app?.status_text}</p>
     {messages.map((message,index)=><p className="analysis-result-message" key={index}>{message}</p>)}
-    {decision?.data_quality?.client_message&&<div className="quality-hint"><b>Как увеличить доступную сумму</b><p>{decision.data_quality.client_message}</p></div>}
+    {decision?.data_quality?.client_message&&<div className="quality-hint"><b>Полнота данных</b><p>{decision.data_quality.client_message}</p></div>}
     {decision?.counterfactuals?.length? <div className="analysis-insights"><b>Что может изменить условия</b>{decision.counterfactuals.map((item,index)=><p key={index}>{item.client_text}</p>)}</div>:null}
     {app?.status==='offered'&&decision?.offers?.length?<div className="analysis-offers"><b>{decision.offers.length===1?'Предложение банка':'Выберите подходящий вариант'}</b><div className="analysis-offer-grid">{decision.offers.map(offer=><OfferCard key={offer.offer_id} offer={offer} busy={busy} onAccept={()=>void accept(offer.offer_id)}/>)}</div></div>:null}
     {decision?.requested_documents?.length?<div className="analysis-documents"><b>Для продолжения нужны документы</b><p className="muted small">Загрузите выписки по счетам из других банков в формате JSON. Можно продолжить без них.</p>{decision.requested_documents.map((document,index)=><span key={index}><FileText size={15}/>{document}</span>)}<label className={'analysis-upload '+(busy?'disabled':'')}><Upload size={18}/><b>{busy?'Загружаем…':'Загрузить выписку'}</b><input type="file" accept=".json,application/json" multiple disabled={busy} onChange={event=>{void upload(event.target.files);event.target.value='';}}/></label><button className="text-button" disabled={busy} onClick={()=>void skipDocuments()}>Продолжить без выписки <ArrowRight size={15}/></button></div>:null}
@@ -53,7 +53,7 @@ export default function ApplicationAnalysis({applicationId,onContinue}:{applicat
 function OfferCard({offer,busy,onAccept}:{offer:V2Offer;busy:boolean;onAccept:()=>void}){
  const binding=offer.limit.constraints.find(item=>item.name===offer.limit.binding);
  return <article className={'analysis-offer-card '+(offer.matches_request?'requested':'')}>
-  <div className="analysis-offer-top"><span>{offer.matches_request?'По вашему запросу':'Альтернативный вариант'}</span><small>Действует до {date(offer.valid_until)}</small></div><h3>{productNames[offer.product]??'Кредитное предложение'}</h3><strong className="analysis-offer-amount">{money(offer.amount)}</strong>
+  <div className="analysis-offer-top"><span>{offer.matches_request?'Условия по вашему запросу':'Альтернативный вариант'}</span><small>Действует до {date(offer.valid_until)}</small></div><h3>{productNames[offer.product]??'Кредитное предложение'}</h3><strong className="analysis-offer-amount">{money(offer.amount)}</strong>
   <div className="analysis-offer-terms"><span><small>Срок</small><b>{offer.term_months} мес.</b></span><span><small>Ставка</small><b>{(offer.rate*100).toLocaleString('ru-RU',{maximumFractionDigits:2})}%</b></span><span><small>Платёж в месяц</small><b>{money(offer.monthly_payment)}</b></span></div>
   <p className="analysis-tradeoff">{offer.tradeoff}</p>
   {binding&&<div className="analysis-binding"><small>Определяющее ограничение суммы</small><b>{limitNames[binding.name]??'Фактор расчёта'} · {money(binding.value??offer.limit.limit)}</b></div>}
