@@ -27,11 +27,6 @@ Everything one task leaves for another lives here, filed under the task that has
 - The pre-approval banner (T29) asks `GET /api/v2/preapproval?inn=…` for any ИНН, so it needs the same user → company link; once it exists, return the pre-approval only for the user's own company (`apps/api/main.py`, `preapproval_v2`). The batch assumes a standing 218-ФЗ consent given at account opening (`# MOCK:` in `standing_request`, `apps/api/preapproval.py`); T25's application checkboxes are transient and do not create that consent register. (from T22)
 - T25 removes the v1 persona chooser from the client start path but does not expose T12 persona shortcuts. If the demo needs selectable profiles, expose only curated fields from `apps/world/demo/personas.json`; never show `archetype`. (from T12, `apps/world/PERSONAS.md`)
 
-## T27 — "analyzing" screen
-
-- Use `enrich(..., on_event=handler)`: `SourceEvent(source, attempt, status, final, error)`. The mock service's HTTP router isn't mounted in `apps/api/main.py`; the orchestrator calls the service in-process by default. (from T06/T07)
-- Poll `GET /api/v2/applications/{id}`: `sources` lists each source step (`source`, `attempt`, `status`, `final`) as enrichment goes, `events` the status changes (`enriching` → `scoring` → decision). Error texts are staff-only. (from T19)
-
 ## T28 — offer menu
 
 - `Offer.tradeoff` and `Counterfactual.client_text` are ready to show; `reasons[].client_text` names the binding limit. For `THIN` there's no cash-flow counterfactual (no cash-flow limit at all): show `DataQuality.client_message` as the "how to get more" hint. `rate_above_cap` / `limit_below_product_minimum` reasons explain a decline, `reapply_after` says when to come back. (from T17, `apps/api/OFFERS.md`)
@@ -39,6 +34,7 @@ Everything one task leaves for another lives here, filed under the task that has
 - The client gets `client_decision(...)` (`apps/api/workflow.py`), not the raw `Decision`: `route_messages` and `reasons` are distinct client texts, offers without `expected_profit`, no flags, score or challenger. Accept with `POST /api/v2/applications/{id}/accept` `{"offer_id", "revision"}`; 409 with `expired` when the offer ran out. (from T19)
 - `needs_data`: show `decision.requested_documents` and `DataQuality.client_message`, upload with `POST /api/v2/applications/{id}/statements` (`multipart/form-data`: `files`, `revision`; 422 = text to show as is) or go on with `.../statements/skip`. Uploaded files are in `statements` of the application. A `PARTIAL` client with automatic offers can't upload (no `offered → enriching` in SPEC §13): the "выписка поможет увеличить лимит" hint means a new application. The re-run after an upload reuses the sources, so it writes no `source` events for the "analyzing" screen (T27). (from T23, `apps/api/STATEMENTS.md`)
 - Statement files for the demo upload are `apps/world/demo/statements/<persona>.json`: `thin_statement` uploads in answer to `needs_data`; `partial_statement` first needs the underwriter's `request_data`. Expected results after the upload are `expected_after_statement` in `apps/world/demo/personas.json`. (from T12)
+- T27's analysis screen shows a client-safe result and routes its “Продолжить” button to “Мои заявки”; connect that action to the offer / next-step view when building this screen. (`apps/web/src/application-analysis.tsx`)
 
 ## T29 — signing → disbursed, pre-approval banner
 
