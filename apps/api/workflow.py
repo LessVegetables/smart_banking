@@ -330,7 +330,7 @@ def default_pipeline() -> Pipeline:
     # MOCK: the synthetic world is a snapshot frozen at its own `as_of` (WORLD_AS_OF), so the features are
     # computed on that day, not today; otherwise business age and the inquiry windows drift away from the
     # data. With a real source client this is the day the sources answered (`snapshot_date`).
-    return Pipeline(client=service, as_of=service.world.as_of, scorer=default_scorer(), retry=RetryPolicy.from_env())
+    return Pipeline(client=service, as_of=service.world.meta.as_of, scorer=default_scorer(), retry=RetryPolicy.from_env())
 
 
 # SIMPLIFICATION: the queue is the `status` column, polled by the in-process worker (worker.py); a bank would

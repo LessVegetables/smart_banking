@@ -7,6 +7,8 @@ export interface Decision {status:string;score:number|null;risk:string|null;reas
 export interface Application {id:string;revision:number;status:string;name:string;answers:Answers;created:string;events:{at:string;status:string;message:string}[];decision:Decision|null;selected_offer:Offer|null;offer_expires:number|null;documents:{id:string;name:string;size:number;status:string}[]}
 export interface User {id:string;name:string;role:string}
 export interface Persona {id:string;title:string;subtitle:string}
+export interface CompanyCard {inn:string;ogrn:string;legal_form:'ip'|'ooo';name:string;status:'active'|'liquidating'|'reorganizing'|'liquidated';registered_at:string;okved_main:string;region:string;address:string;owner_name:string;owner_inn:string}
+export interface Consent {kind:'bki_company'|'bki_owner'|'personal_data';subject_inn:string;given_at:string}
 export async function api<T>(path:string,method='GET',body?:unknown):Promise<T>{
  const res=await fetch('/api'+path,{method,credentials:'same-origin',headers:body instanceof FormData?{}:body?{'Content-Type':'application/json'}:{},body:body instanceof FormData?body:body?JSON.stringify(body):undefined});
  if(!res.ok){let text='Не удалось выполнить запрос';try{const j=await res.json();text=typeof j.detail==='string'?j.detail:'Проверьте заполненные поля';}catch{if(res.status===502)text='Сервер пока недоступен. Проверьте запуск API.';}throw new Error(text);}

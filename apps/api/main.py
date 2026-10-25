@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import secrets
 import threading
 import time
@@ -25,8 +26,9 @@ from .personas import PERSONAS, persona_answers
 from .worker import loop, event, save_decision
 from .storage import storage
 from .assistant import explain
-from .contracts import CollateralType, ProductId
+from .contracts import CollateralType, EgrulPayload, ProductId, SourceId
 from . import disbursement, preapproval, staff_actions, statements, workflow
+from apps.sources import SourceNotFound, SourceTimeout, SourceUnavailable
 
 DEMO=os.environ.get('DEMO_MODE','true').lower()=='true'
 COOKIE_SECURE=os.environ.get('COOKIE_SECURE','false').lower()=='true'
@@ -332,6 +334,29 @@ def review(id:str,body:Review,user=Depends(staff),db=Depends(db_session)):
 class V2Submission(Input):idempotency_key:str=Field(min_length=8,max_length=200);request:dict[str,Any]
 class V2Revision(Input):revision:int
 class V2Accept(V2Revision):offer_id:str=Field(min_length=1,max_length=200)
+
+@app.get('/api/v2/companies/{inn}')
+async def company_card_v2(inn:str,user=Depends(current_user)):
+    """MOCK: look up the synthetic ЕГРЮЛ/ЕГРИП record for the client's prefilled card."""
+    # SIMPLIFICATION: an authenticated user is not yet bound to this company (see the T25 handoff note).
+    if not re.fullmatch(r'\d{10}(?:\d{2})?',inn):
+        raise HTTPException(422,'Введите ИНН компании из 10 или 12 цифр')
+    try:
+        record=await workflow.default_pipeline().client.fetch(SourceId.EGRUL,inn)
+    except SourceNotFound as e:
+        raise HTTPException(404,'Компания с таким ИНН не найдена') from e
+    except (SourceTimeout,SourceUnavailable) as e:
+        raise HTTPException(503,'Не удалось получить сведения из реестра. Повторите попытку позже.') from e
+    if not isinstance(record,EgrulPayload):
+        raise HTTPException(503,'Источник вернул неожиданный формат сведений')
+    if record.inn!=inn:
+        raise HTTPException(503,'Источник вернул сведения для другого ИНН')
+    owner=record.director if record.legal_form.value=='ip' else (record.founders[0] if record.founders else None)
+    if owner is None:
+        raise HTTPException(503,'В сведениях реестра не найден собственник компании')
+    return {'inn':record.inn,'ogrn':record.ogrn,'legal_form':record.legal_form,'name':record.name,
+            'status':record.status,'registered_at':record.registered_at,'okved_main':record.okved_main,
+            'region':record.region,'address':record.address,'owner_name':owner.full_name,'owner_inn':owner.inn}
 
 def own_v2(db,id,user):
     a=db.get(LoanApplication,id)
