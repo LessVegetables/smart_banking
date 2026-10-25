@@ -124,7 +124,7 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 | ID | Task | Size | Depends on | Status | Owner / PR |
 |---|---|---|---|---|---|
 | T33 | Golden engine tests per persona (expected-outcomes table) + one end-to-end smoke test | M | T12, T17 | done | PR #37 |
-| T34 | Docker compose, OpenAPI, request collection, `THIRD_PARTY_NOTICES` | S | — | todo | |
+| T34 | Docker compose, OpenAPI, request collection, `THIRD_PARTY_NOTICES` | S | — | done | PR #38 |
 | T35 | Docs in Russian: process model, state diagram, data model, SLA table, simplification registry; rewrite `README.md` and `ARCHITECTURE.md` for v2 | M | — | todo | |
 
 ### Stretch

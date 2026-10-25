@@ -10,3 +10,5 @@ __pycache__
 tests
 .env.*
 .docker-cli
+**/__pycache__
+apps/world/out
