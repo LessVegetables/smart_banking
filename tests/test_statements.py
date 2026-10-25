@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from apps.api import contracts as c
 from apps.api import statements as st, workflow
 from apps.api.contracts import ApplicationStatus as S, DataQualityTier as T, Route, SourceId, TrustLevel
-from apps.api.db import LoanApplication, Session
+from apps.api.db import LoanApplication, Session, User
 from apps.api.fact_store import load_facts
 from apps.api.features import SourcePayloads, fns_revenue
 from apps.api.limits import cash_flow
@@ -293,6 +293,9 @@ def test_statement_api(world, cases):
     case = cases['thin']
     with TestClient(api) as client:
         assert client.post('/api/auth/demo', json={'name': 'Клиент'}).status_code == 200
+        user_id=client.get('/api/auth/me').json()['id']
+        with Session.begin() as s:
+            s.get(User,user_id).identity='telegram:statement-api-test'
         body = {'idempotency_key': 'statement-api-1', 'request': {
             k: v for k, v in case.request.model_dump(mode='json').items() if k not in ('application_id', 'submitted_at')}}
         created = client.post('/api/v2/applications', json=body).json()

@@ -344,6 +344,9 @@ def api(world):
     from apps.api.main import app
     with TestClient(app) as client:
         assert client.post('/api/auth/demo', json={'name': 'Клиент'}).status_code == 200
+        user_id=client.get('/api/auth/me').json()['id']
+        with Session.begin() as s:
+            s.get(db.User,user_id).identity=f'telegram:workflow-tests:{user_id}'
         yield client
 
 
@@ -390,6 +393,9 @@ def test_api_flow(api, world, outcomes):
 
     other = TestClient(api.app)
     other.post('/api/auth/demo', json={'name': 'Другой'})
+    user_id=other.get('/api/auth/me').json()['id']
+    with Session.begin() as s:
+        s.get(db.User,user_id).identity=f'telegram:workflow-tests-other:{user_id}'
     assert other.get(f'/api/v2/applications/{created["id"]}').status_code == 404
     assert other.post('/api/v2/applications', json=body).json()['id'] != created['id']  # keys are per user
 

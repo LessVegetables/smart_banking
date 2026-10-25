@@ -15,7 +15,10 @@ os.environ['TELEGRAM_BOT_TOKEN']='test-telegram-token'
 import pytest
 from fastapi.testclient import TestClient
 from apps.api.main import app
+from apps.api.db import Session, User
 from apps.api.worker import run_once
+from apps.world.generator import generate_world
+from apps.api.demo_companies import company_options
 
 @pytest.fixture
 def client():
@@ -54,6 +57,33 @@ def test_application_ownership(client):
         other.post('/api/auth/demo',json={'name':'Другой'})
         assert other.get('/api/applications/'+a['id']).status_code==404
         assert other.get('/api/applications').json()==[]
+
+def test_demo_profile_is_stable_and_keeps_application_history(client):
+    assert client.post('/api/auth/demo',json={'name':'Стабильный профиль'}).status_code==200
+    application,_=submitted(client)
+    first=client.get('/api/auth/me').json()
+    assert client.post('/api/auth/logout').status_code==200
+    second=client.post('/api/auth/demo',json={'name':'  Стабильный профиль  '}).json()
+    assert second['id']==first['id']
+    assert [item['id'] for item in client.get('/api/applications').json()]==[application['id']]
+
+def test_demo_company_catalog_is_available_and_restricts_unknown_inn(client):
+    options=client.get('/api/v2/demo/companies').json()
+    assert options
+    assert all({'inn','company_name','title','persona_id'} <= item.keys() for item in options)
+    assert client.get('/api/v2/companies/0000000000').status_code==403
+    r=client.post('/api/v2/applications',json={'idempotency_key':'unknown-company','request':{'inn':'0000000000'}})
+    assert r.status_code==422 and 'демо-списка' in r.text
+
+def test_demo_company_catalog_falls_back_to_current_world(tmp_path):
+    world=generate_world(n=1)
+    personas=tmp_path/'personas.json'
+    options=company_options(world,personas)
+    assert len(options)==1
+    assert options[0]['inn']==world.companies[0].inn
+    assert 'archetype' not in options[0] and 'q' not in options[0]
+    personas.write_text('{broken',encoding='utf-8')
+    assert company_options(world,personas)[0]['inn']==world.companies[0].inn
 
 def test_optimistic_survey_and_hidden_answers(client):
     s=filled(client,'equipment')
@@ -172,6 +202,10 @@ def test_v2_company_lookup_returns_registry_card_and_consent_subjects(client,mon
     from apps.api import main as main_module
     from apps.api.contracts import EgrulPayload,SourceId
     from apps.sources import SourceNotFound
+
+    user_id=client.get('/api/auth/me').json()['id']
+    with Session.begin() as db:
+        db.get(User,user_id).identity='telegram:test-company-lookup'
 
     fixtures=Path('tests/fixtures/sources')
     records={}
