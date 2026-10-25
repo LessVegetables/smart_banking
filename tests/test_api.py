@@ -209,3 +209,17 @@ def test_v2_company_lookup_requires_login(client):
     from apps.api.main import app
     with TestClient(app) as anonymous:
         assert anonymous.get('/api/v2/companies/5406000001').status_code==401
+
+def test_default_pipeline_uses_world_meta_as_of(monkeypatch):
+    from datetime import date
+    from types import SimpleNamespace
+    from apps.api import workflow
+
+    expected=date(2026,10,1)
+    service=SimpleNamespace(world=SimpleNamespace(meta=SimpleNamespace(as_of=expected)))
+    monkeypatch.setattr(workflow,'service_from_env',lambda:service)
+    workflow.default_pipeline.cache_clear()
+    try:
+        assert workflow.default_pipeline().as_of==expected
+    finally:
+        workflow.default_pipeline.cache_clear()
