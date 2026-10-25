@@ -43,11 +43,6 @@ Everything one task leaves for another lives here, filed under the task that has
 - Challenger comparison remains optional and is deferred: the committed validation artifact is generated for the champion only; producing and maintaining a second report is outside T32's screen scope. (`apps/ml/validate.py` can validate v0 when needed.) (from T15)
 - Not handled: the web client maintains its API types manually, so T32 does not need a generated shared contract. (`ValidationReport` remains in `apps/ml/validation.py`.) (from T11)
 
-## T33 — golden tests
-
-- Expected offer sets per persona come from `generate_offers` (`apps/api/offers.py`). The fixture `decision_offered.json` says 890k for the "without the current loan" hint; the engine gives 900k because it re-prices the new amount. Use engine numbers in the expected-outcomes table, not the fixture's. (from T17)
-- The expected-outcomes table is `apps/world/demo/personas.json` (`read()` in `apps/world/personas.py`), built by running each persona through `decide` with mock enrichment (`Conveyor`). `tests/test_world_personas.py` already checks it stays in sync at the `decide` level; T33's job is the run through the API and worker: submit, statement upload, staff actions. Personas need the default world (seed 42, 5000 companies). (from T12, `apps/world/PERSONAS.md`)
-
 ## T34 — Docker
 
 - The API has no logging config of its own: `init_db` runs Alembic, whose `alembic.ini` sets the root logger to WARN, so INFO lines (e.g. the champion-vs-challenger line from `apps/api/scoring.py`) don't reach `docker logs`. Configure app logging (level from `.env`) at startup. (from T15)
@@ -86,3 +81,4 @@ Everything one task leaves for another lives here, filed under the task that has
 - The uploaded statement format (`Statement` in `apps/api/statements.py`: bank, ИНН, `MonthlyTurnover` months) is a client → pipeline exchange but not a contract. Proposed: a shared-folder PR moving it into `apps/api/contracts.py` with a fixture in `tests/fixtures/`. (from T23)
 - Statement policy is `# SIMPLIFICATION:` constants in `apps/api/statements.py`: `STALE_MONTHS = 3`, `FNS_EXCESS = 0.30`, `MAX_FILES = 5`, `MAX_FILE_BYTES`. Proposed: a shared-folder PR adding them to `config/data_quality.json` (econ team owns the values). (from T23)
 - An application in `needs_data` waits for the client forever: SPEC §13 has no timeout for it, only `withdrawn`. If a data request should expire (e.g. after the 10 days an offer lasts), agree the term and add the transition. (from T23)
+- The `not_found` persona (`apps/world/demo/personas.json`) can't be shown in the demo: a demo client may submit only ИНН from the catalog (`available_demo_inns`, `apps/api/demo_companies.py`), which holds only companies of the world, so the API answers 422. Let the catalog offer the `not_found` ИНН too, or document it as a demo limitation. `tests/test_golden_personas.py` submits it as a non-demo client. (from T33)
