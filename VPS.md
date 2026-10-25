@@ -108,7 +108,7 @@ docker compose --env-file .env.vps -f compose.vps.yaml stop
 
 После этого кабинет — https://etobank.ru/, рабочее место — https://etobank.ru/staff, mini app — https://etobank.ru/mini/. Конфиг проверен `nginx -t` на версиях 1.18, 1.24 и 1.27; на 1.25 и новее nginx предупреждает, что `listen … http2` устарел, — это не ошибка (можно заменить на `listen 443 ssl;` и `http2 on;`).
 
-Что делает конфиг: `умныйкредитныйкабинет.рф` (по HTTP и HTTPS) перенаправляет на `https://etobank.ru` с тем же путём и строкой запроса — `/staff?utm_source=tg` открывает `https://etobank.ru/staff?utm_source=tg`; HTTP → HTTPS, TLS 1.2–1.3, HSTS, gzip, тело запроса до 12 МБ (загрузка выписок — до 5 файлов по 2 МБ), заголовки `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`. Заголовка `X-Frame-Options` нет намеренно: веб-версия Telegram открывает mini app во фрейме.
+Что делает конфиг: `умныйкредитныйкабинет.рф` (по HTTP и HTTPS) перенаправляет на `https://etobank.ru` с тем же путём и строкой запроса; если в ссылке нет `utm_source`, добавляется `utm_source=rf_domain`, чтобы в аналитике был виден этот домен (`/staff?utm_source=tg` → `https://etobank.ru/staff?utm_source=tg`, `/staff?utm_campaign=x` → `https://etobank.ru/staff?utm_campaign=x&utm_source=rf_domain`, `/` → `https://etobank.ru/?utm_source=rf_domain`). Метку меняет `map` в начале блока `.рф`; HTTP → HTTPS, TLS 1.2–1.3, HSTS, gzip, тело запроса до 12 МБ (загрузка выписок — до 5 файлов по 2 МБ), заголовки `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`. Заголовка `X-Frame-Options` нет намеренно: веб-версия Telegram открывает mini app во фрейме.
 
 Управление — те же команды Compose с двумя файлами:
 
