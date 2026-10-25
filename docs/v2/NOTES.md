@@ -27,11 +27,6 @@ Everything one task leaves for another lives here, filed under the task that has
 - The pre-approval banner (T29) asks `GET /api/v2/preapproval?inn=…` for any ИНН, so it needs the same user → company link; once it exists, return the pre-approval only for the user's own company (`apps/api/main.py`, `preapproval_v2`). The batch assumes a standing 218-ФЗ consent given at account opening (`# MOCK:` in `standing_request`, `apps/api/preapproval.py`); T25's application checkboxes are transient and do not create that consent register. (from T22)
 - T25 removes the v1 persona chooser from the client start path but does not expose T12 persona shortcuts. If the demo needs selectable profiles, expose only curated fields from `apps/world/demo/personas.json`; never show `archetype`. (from T12, `apps/world/PERSONAS.md`)
 
-## T26 — need intake
-
-- The product recommendation must use the same purpose → product mapping as the offer generator: `PURPOSE_PRODUCT` in `apps/api/offers.py` (cash gap → overdraft, seasonal gap / contract → credit line, equipment → investment, else working capital). Otherwise the client gets an "other product" offer for the product the intake itself recommended. (from T17)
-- T25 hands the confirmed `CompanyCard` and the three consent records to the next step only in client memory (`v2Company` / `v2Consents` in `apps/web/src/main.tsx`). Add the short need form and submit them with `POST /api/v2/applications`; they are lost on refresh until that step is implemented. (from T25)
-
 ## T27 — "analyzing" screen
 
 - Use `enrich(..., on_event=handler)`: `SourceEvent(source, attempt, status, final, error)`. The mock service's HTTP router isn't mounted in `apps/api/main.py`; the orchestrator calls the service in-process by default. (from T06/T07)
