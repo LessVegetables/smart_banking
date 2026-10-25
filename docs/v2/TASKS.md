@@ -40,6 +40,7 @@ What we build and why: [SPEC.md](SPEC.md) (in Russian). Contracts between tracks
 | 2026-10-25 | Demo personas (T12, `apps/world/personas.py`): one company per demo outcome from the default world (seed 42, 5000), the first in world order whose decision passes the target's check; expected outcomes are the conveyor's own, in `apps/world/demo/personas.json`, with other-bank statements for the `PARTIAL` and `THIN` personas in `apps/world/demo/statements/`. Selection reads the hidden archetype and account profile (now stored on `Company`, generator `world-t12-1`), nothing else hidden. The `committee` persona has no offers: no company reaches the committee with one on this world. The econ team confirms the table. |
 | 2026-10-25 | T25 company-card lookup uses `GET /api/v2/companies/{inn}` backed only by the synthetic EGRUL/EGRIP source. It returns public company-card fields and the main owner's INN required to identify the BKI consent subject; it does not bind the logged-in user to that company. |
 | 2026-10-25 | Demo access uses a stable profile per entered name and offers every current T12 persona company. The catalog is intersected with the current synthetic world; if no persona remains, one current company is exposed as a fallback, rebuilding the default world only if the current world itself is empty. A demo profile may submit for any company in that catalog, so changing companies does not strand the demo user. |
+| 2026-10-26 | Analytics docs for the built system live in `docs/` (T35): `PROCESS.md`, `DATA_MODEL.md`, `SLA.md`, `SIMPLIFICATIONS.md` (the simplification registry; new `# MOCK:` / `# SIMPLIFICATION:` markers get a row there). `docs/v2/` stays the planning set. `README.md`, `ARCHITECTURE.md` and `VPS.md` describe v2 only; v1 leftovers are to be deleted, not documented. |
 
 ## Open questions
 
@@ -125,7 +126,7 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 |---|---|---|---|---|---|
 | T33 | Golden engine tests per persona (expected-outcomes table) + one end-to-end smoke test | M | T12, T17 | done | PR #37 |
 | T34 | Docker compose, OpenAPI, request collection, `THIRD_PARTY_NOTICES` | S | — | done | PR #38 |
-| T35 | Docs in Russian: process model, state diagram, data model, SLA table, simplification registry; rewrite `README.md` and `ARCHITECTURE.md` for v2 | M | — | todo | |
+| T35 | Docs in Russian: process model, state diagram, data model, SLA table, simplification registry; rewrite `README.md` and `ARCHITECTURE.md` for v2 | M | — | done | PR #39 |
 
 ### Stretch
 
