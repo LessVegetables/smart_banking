@@ -14,6 +14,9 @@ export type NeededBy='days'|'week'|'month'|'later';
 export type ProductId='overdraft'|'working_capital'|'investment'|'credit_line';
 export interface EquipmentInfo {description:string;price:number;down_payment:number;supplier_inn:string}
 export interface NeedRequest {purpose:Purpose;amount:number;term_months:number;needed_by:NeededBy;preferred_product:ProductId;declared_annual_revenue:null;equipment:EquipmentInfo|null}
+export interface V2SourceProgress {at:string;source:string;attempt:number;status:string;final:boolean}
+export interface V2ClientDecision {status:string;matches_request:boolean|null;route_messages:string[];reasons:string[];offers:{offer_id:string;product:string;amount:number;term_months:number;rate:number;monthly_payment:number;tradeoff:string;matches_request:boolean}[];counterfactuals:{client_text:string}[];data_quality:{tier:string;client_message:string}|null;requested_documents:string[];reapply_after:string|null;decided_at:string}
+export interface V2Application {id:string;status:string;status_text:string;revision:number;request:NeedRequest;created:string;updated:string;decision:V2ClientDecision|null;events:{at:string;status:string;message:string}[];sources:V2SourceProgress[]}
 export async function api<T>(path:string,method='GET',body?:unknown):Promise<T>{
  const res=await fetch('/api'+path,{method,credentials:'same-origin',headers:body instanceof FormData?{}:body?{'Content-Type':'application/json'}:{},body:body instanceof FormData?body:body?JSON.stringify(body):undefined});
  if(!res.ok){let text='Не удалось выполнить запрос';try{const j=await res.json();text=typeof j.detail==='string'?j.detail:'Проверьте заполненные поля';}catch{if(res.status===502)text='Сервер пока недоступен. Проверьте запуск API.';}throw new Error(text);}

@@ -108,9 +108,9 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 
 | ID | Task | Size | Depends on | Status | Owner / PR |
 |---|---|---|---|---|---|
-| T25 | Client: ИНН entry → pre-filled company card → consents (БКИ 218-ФЗ, ПДн 152-ФЗ) | M | T00 | review | local branch `t25-inn-entry-consents`; PR not opened |
-| T26 | Need intake: 3–6 questions + product recommendation (replaces the 43-question survey) | S–M | T00 | review | local branch `t26-need-intake`; PR not opened |
-| T27 | "Analyzing your business" screen with live per-source status | S | T07, T19 | todo | |
+| T25 | Client: ИНН entry → pre-filled company card → consents (БКИ 218-ФЗ, ПДн 152-ФЗ) | M | T00 | done | PR #26 |
+| T26 | Need intake: 3–6 questions + product recommendation (replaces the 43-question survey) | S–M | T00 | done | PR #27 |
+| T27 | "Analyzing your business" screen with live per-source status | S | T07, T19 | done | PR #28 |
 | T28 | Offer menu: trade-offs, binding limit, counterfactuals, decline screen, data-quality message | M | T17 | todo | |
 | T29 | Signing → disbursed happy end + pre-approval banner | S | T21, T22 | todo | |
 | T30 | Staff dossier: sources, declared vs verified, data-quality metrics, flags, score contributions, limit and price breakdowns, audit log | L | T14–T19 | todo | |
