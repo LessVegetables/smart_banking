@@ -117,7 +117,7 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 | T29a | Stable demo profile, selectable synthetic companies, v2 application and financing history | M | T12, T19, T21, T25 | done | PR #31 |
 | T30 | Staff dossier: sources, declared vs verified, data-quality metrics, flags, score contributions, limit and price breakdowns, audit log | L | T14–T19 | done | PR #32 |
 | T31 | Staff actions UI + committee second signature | M | T20 | done | PR #35 |
-| T32 | Risk-manager page with model validation results | S | T11 | todo | |
+| T32 | Risk-manager page with model validation results | S | T11 | done | PR #36 |
 
 ### Shared
 

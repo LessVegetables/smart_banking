@@ -35,6 +35,16 @@ export interface V2StaffEvent {id:number;at:string;actor:string;kind:string;from
 export interface V2StaffApplication {id:string;status:string;status_text:string;revision:number;request:V2StoredRequest;created:string;updated:string;offer_valid_until:string|null;selected_offer_id:string|null;closing:{offer_id:string;documents:unknown[];signature:Record<string,unknown>|null;conditions:{code:string;title:string;status:string;detail?:string|null}[];payout:Record<string,unknown>|null;code:unknown}|null;decision:V2StaffDecision|null;data_quality:V2DataQuality|null;sources:{source:string;status:string;requested_at:string|null;received_at:string|null;latency_ms:number|null;attempts:number;error:string|null}[];facts:V2StaffFact[];attempts:number;pending_review:Record<string,unknown>|null;statements:{file_name:string;size:number;sha256:string;uploaded_at:string;statement:{bank_name:string;inn:string;months:{month:string}[]}}[]|null;events:V2StaffEvent[]}
 export interface V2StaffReasonCodes {actions:Record<string,Record<string,string>>;reject:Record<string,string>}
 export interface V2StaffOverrides {decisions:number;overrides:number;override_rate:number|null;by_action:Record<string,{decisions:number;overrides:number}>;override_reasons:Record<string,number>}
+export interface ModelValidationReport {
+ scorecard_version:string;feature_set_version:string;world:{generator_version:string;seed:number;n:number;as_of:string;outcomes_version:string};
+ samples:{name:'train'|'holdout';companies:number;defaults:number;default_rate:number}[];
+ thresholds:{psi_watch:number;psi_shift:number;confidence:number};
+ gini:{holdout:number;holdout_ci_low:number;holdout_ci_high:number;train:number;true_pd_ceiling:number};
+ cap:{companies_share:number;defaults_share:number}[];
+ calibration:{predicted_pd:number;actual_rate:number;grades:{grade:string;pd_min:number;pd_max:number|null;companies:number;companies_share:number;defaults:number;predicted_pd:number|null;actual_rate:number|null;actual_ci_low:number|null;actual_ci_high:number|null;predicted_vs_actual:'within'|'below'|'above'|null}[]} ;
+ psi_grades:ModelPsiResult;psi_points:ModelPsiResult;psi_features:ModelPsiResult[];limitations:string[];
+}
+export interface ModelPsiResult {name:string;label:string;value:number;status:'stable'|'watch'|'shift';buckets:{label:string;expected_share:number;actual_share:number;contribution:number}[]}
 export async function api<T>(path:string,method='GET',body?:unknown):Promise<T>{
  const res=await fetch('/api'+path,{method,credentials:'same-origin',headers:body instanceof FormData?{}:body?{'Content-Type':'application/json'}:{},body:body instanceof FormData?body:body?JSON.stringify(body):undefined});
  if(!res.ok){let text='Не удалось выполнить запрос';try{const j=await res.json();text=typeof j.detail==='string'?j.detail:'Проверьте заполненные поля';}catch{if(res.status===502)text='Сервер пока недоступен. Проверьте запуск API.';}throw new Error(text);}
