@@ -113,7 +113,7 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 | T26 | Need intake: 3–6 questions + product recommendation (replaces the 43-question survey) | S–M | T00 | done | PR #27 |
 | T27 | "Analyzing your business" screen with live per-source status | S | T07, T19 | done | PR #28 |
 | T28 | Offer menu: trade-offs, binding limit, counterfactuals, decline screen, data-quality message | M | T17 | done | PR #29 |
-| T29 | Signing → disbursed happy end + pre-approval banner | S | T21, T22 | todo | |
+| T29 | Signing → disbursed happy end + pre-approval banner | S | T21, T22 | done | PR #30 |
 | T29a | Stable demo profile, selectable synthetic companies, v2 application and financing history | M | T12, T19, T21, T25 | done | PR #31 |
 | T30 | Staff dossier: sources, declared vs verified, data-quality metrics, flags, score contributions, limit and price breakdowns, audit log | L | T14–T19 | todo | |
 | T31 | Staff actions UI + committee second signature | M | T20 | todo | |

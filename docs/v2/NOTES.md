@@ -26,13 +26,6 @@ Everything one task leaves for another lives here, filed under the task that has
 - Non-demo client accounts still lack a persistent user → company link. The built-in demo profile is restricted to the current T12 company catalog in `apps/api/main.py`; add a real ownership binding before applying company-specific access rules to Telegram clients (`company_card_v2`, `submit_v2`, `preapproval_v2`). (from T19, T22, T29a)
 - The pre-approval batch assumes a standing 218-ФЗ consent given at account opening (`# MOCK:` in `standing_request`, `apps/api/preapproval.py`); T25's application checkboxes are transient and do not create that consent register. (from T22)
 
-## T29 — signing → disbursed, pre-approval banner
-
-- `accept` already lands in `documents` with `closing.documents` (`doc_id`, `title`, `signer`, `text`); show each with `GET /api/v2/applications/{id}/documents/{doc_id}`. Then `POST .../sign/code` `{"revision"}` → `demo_code` to show on screen (no SMS, `# MOCK:`), and `POST .../sign` `{"code", "revision"}`. A wrong or expired code is 422 `{"detail", "revision"}`: show `detail` as is and send the new `revision` next time (`apps/api/DISBURSEMENT.md`). (from T21)
-- After signing the application is in `conditions`; the worker moves it to `disbursed` within a tick. Poll `GET /api/v2/applications/{id}`: `closing.conditions[].status` per condition, `closing.payout.text` is the happy-end line ("… зачислено на счёт …", "… перечислено поставщику …" or "лимит … установлен"). A `failed` condition keeps it in `conditions`: show that the bank is checking it. (from T21)
-- Banner: `GET /api/v2/preapproval?inn=…` returns `{product, term_months, amount, rate, valid_until, client_text}` or `null` (no pre-approval, or it expired); show `client_text` and send the client to an overdraft application at `amount` (`purpose: cash_gap`, `preferred_product: overdraft`, 12 months). Staff get the full `PreApproval` with the reason (`apps/api/PREAPPROVAL.md`). The world needs a first batch: the worker runs it within a second of start-up, or `POST /api/v2/staff/preapproval/run`. (from T22)
-- The banner persona is `auto_ooo` (ИНН `6163001918`): the batch pre-approves an overdraft up to 2 820 000 ₽ (`preapproval` in `apps/world/demo/personas.json`). (from T12)
-
 ## T29a — stable demo companies and application history
 
 - The curated T12 persona file can become stale after changing `WORLD_SEED`, `WORLD_N`, `WORLD_AS_OF`, the generator, or policy. Regenerate it with `python -m apps.world.personas`; until then the API exposes a fallback company from the current world (`apps/api/demo_companies.py`). (from T12)
