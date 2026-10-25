@@ -29,6 +29,7 @@ from .assistant import explain
 from .contracts import CollateralType, EgrulPayload, ProductId, SourceId
 from . import disbursement, preapproval, staff_actions, statements, workflow
 from apps.sources import SourceNotFound, SourceTimeout, SourceUnavailable
+from apps.ml.validation import ValidationReport
 
 DEMO=os.environ.get('DEMO_MODE','true').lower()=='true'
 COOKIE_SECURE=os.environ.get('COOKIE_SECURE','false').lower()=='true'
@@ -73,6 +74,10 @@ def current_user(request:Request,db=Depends(db_session)):
 
 def staff(user=Depends(current_user)):
     if user.role!='staff':raise HTTPException(403,'Нужен доступ сотрудника')
+    return user
+
+def risk_manager(user=Depends(staff)):
+    if user.staff_position!='risk_manager':raise HTTPException(403,'Нужен доступ риск-менеджера')
     return user
 
 def own(db,model,id,user):
@@ -516,6 +521,13 @@ def reason_codes_v2(user=Depends(staff)):return staff_actions.reason_codes()
 
 @app.get('/api/v2/staff/overrides')
 def overrides_v2(user=Depends(staff),db=Depends(db_session)):return staff_actions.override_stats(db)
+
+@app.get('/api/v2/staff/model-validation')
+def model_validation_v2(user=Depends(risk_manager)):
+    report_path=Path(__file__).resolve().parents[1]/'ml'/'scorecard_v1.validation.json'
+    try:return ValidationReport.model_validate_json(report_path.read_text(encoding='utf-8')).model_dump(mode='json')
+    except FileNotFoundError:raise HTTPException(503,'Отчёт валидации модели пока недоступен')
+    except ValidationError:raise HTTPException(503,'Отчёт валидации модели имеет неверный формат')
 
 @app.post('/api/v2/applications/{id}/review')
 def review_v2(id:str,body:V2Review,user=Depends(staff),db=Depends(db_session)):

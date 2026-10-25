@@ -124,6 +124,20 @@ def test_staff_role_and_comment_required(client):
     assert client.get('/api/staff/reviews').status_code==403
     assert client.post('/api/auth/staff',json={'password':'wrong'}).status_code==403
 
+def test_model_validation_is_available_only_to_risk_managers(client):
+    with TestClient(app) as underwriter:
+        assert underwriter.post('/api/auth/staff',json={'password':'test-staff-password-only','position':'underwriter'}).status_code==200
+        assert underwriter.get('/api/v2/staff/model-validation').status_code==403
+    with TestClient(app) as risk_manager:
+        assert risk_manager.post('/api/auth/staff',json={'password':'test-staff-password-only','position':'risk_manager'}).status_code==200
+        response=risk_manager.get('/api/v2/staff/model-validation')
+        assert response.status_code==200,response.text
+        report=response.json()
+        assert report['scorecard_version']=='scorecard_v1'
+        assert report['gini']['true_pd_ceiling']>report['gini']['holdout']
+        assert report['limitations']
+        assert any(grade['predicted_vs_actual']=='below' for grade in report['calibration']['grades'])
+
 def test_invalid_file_not_accepted(client):
     a,_=submitted(client,'manual');run_once()
     assert client.post(f'/api/applications/{a["id"]}/documents',files={'file':('report.pdf',b'<script>alert(1)</script>','application/pdf')}).status_code==422

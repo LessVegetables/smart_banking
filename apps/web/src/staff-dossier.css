@@ -22,7 +22,7 @@
 .staff-empty{min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;color:#95a187}
 .staff-empty h2{font-size:18px;margin:4px 0 0;color:var(--ink)}
 .staff-empty p{font-size:11px;margin:0}
-.staff-dossier-content{display:grid;gap:16px}
+.staff-dossier-content{display:grid;gap:16px}.staff-dossier-toolbar{display:flex;gap:9px;flex-shrink:0}
 .staff-dossier-content>.back-link{justify-self:start;margin:0 0 2px}
 .staff-case-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:22px}
 .staff-case-heading h2{font-size:19px;margin:8px 0}
