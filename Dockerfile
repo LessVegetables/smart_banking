@@ -12,7 +12,11 @@ ENV PYTHONUNBUFFERED=1 HOST=0.0.0.0 PORT=8000
 COPY requirements-lock.txt ./
 RUN pip install --no-cache-dir -r requirements-lock.txt
 COPY apps/api ./apps/api
+COPY apps/ml ./apps/ml
+COPY apps/sources ./apps/sources
+COPY apps/world ./apps/world
 COPY config ./config
+COPY alembic.ini ./alembic.ini
 COPY run.py ./
 COPY --from=frontend /build/dist ./dist
 RUN useradd --create-home appuser && mkdir -p /app/data && chown appuser:appuser /app/data
