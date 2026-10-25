@@ -32,14 +32,7 @@ Everything one task leaves for another lives here, filed under the task that has
 
 ## T30 — staff dossier
 
-- `ScoreResult.contributions` has one row per card feature but not the base points: show `points - sum(contributions)` as «базовые баллы». The challenger (`Decision.challenger`) is for staff only, labelled as a shadow model that didn't affect the decision. (from T15)
-- Limit breakdown: every `LimitConstraint` carries its `inputs` and `note`; the `leverage` note says when the revenue came from our account because ФНС has none. `PriceBreakdown` components add up to the rate. (from T16, `apps/api/LIMITS.md`)
-- Our own БКИ request doesn't appear in the report. If the dossier should show it, ask track 1 to add it in the БКИ adapter (`apps/sources/`). (from T06)
-- "Почему заявка пришла сюда" is `Decision.route_reasons[].staff_text`, one row per condition; the code says which matrix row fired (`apps/api/ROUTING.md`). `Decision` doesn't store each reason's own route (`Routing.routes` does): derive it from the code table if the dossier needs it. (from T18)
-- Staff actions are in the audit log as `review`, `proposal` and `signature` events with the reason code, comment, position and `override`; `pending_review` is a committee decision waiting for its second signature (`apps/api/STAFF_ACTIONS.md`). Staff reasons are `Decision.reasons` with code `staff_<reason code>`. (from T20)
-- Statements (T23): `statements` in the staff view (parsed months, file name, SHA-256), facts with source `statement_upload` / `client_document` next to our account's, flags `statement_period` and `statement_inflows_above_fns`, route reason `route_statement_upload`. `DataQuality` is with the statements; the tier on our account alone is `own_account_tier` in the run's `action` event. (from T23, `apps/api/STATEMENTS.md`)
-- `GET /api/v2/applications/{id}` as staff returns `decision`, `data_quality`, `sources` (envelope per source: status, timestamps, latency, attempts, error), `facts` (fact store) and the full `events`; `GET .../events` is the audit log alone (`apps/api/WORKFLOW.md`). Full source payloads are in `LoanApplication.enrichment` if the dossier needs them. (from T19)
-- Signing, conditions and payout are `closing` in the staff view: `signature`, `conditions[].detail` (pledge registration number, invoice check, failure reason), `payout` (account or supplier, payment id). Code issues, wrong codes and condition checks are `action` events in the audit log (`apps/api/DISBURSEMENT.md`). (from T21)
+- The dossier shows the BKI source call and its status. A separate record of our own bureau inquiry is still absent from the adapter payload, so the UI cannot display it as an inquiry event; Track 1 would need to expose it if the team wants that detail. (from T06)
 
 ## T31 — staff actions UI
 
