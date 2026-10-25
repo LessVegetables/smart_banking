@@ -97,7 +97,24 @@ def health():return {'ok':True,'demo':DEMO,'rules':RULES['version']}
 @app.post('/api/auth/demo')
 def demo_login(body:DemoLogin,response:Response,db=Depends(db_session)):
     if not DEMO:raise HTTPException(404)
-    user=User(name=body.name.strip());db.add(user);db.flush()
+    # SIMPLIFICATION: a demo profile name is its stable local identity. This preserves its synthetic
+    # companies and application history across logout/login; it is not real-user authentication.
+    name=' '.join(body.name.split())
+    if not name:raise HTTPException(422,'Введите имя демо-профиля')
+    identity='demo:'+name.casefold()
+    user=db.scalar(select(User).where(User.identity==identity))
+    legacy=db.scalars(select(User).where(User.identity.is_(None),User.role=='customer',User.name==name)).all()
+    if user is None and legacy:
+        user=legacy.pop(0)
+        user.identity=identity
+        db.flush()
+    elif user is None:
+        user=User(name=name,identity=identity);db.add(user);db.flush()
+    duplicate_ids=[old.id for old in legacy if old.id!=user.id]
+    if duplicate_ids:
+        # Merge prior anonymous demo sessions so their saved applications remain visible to this profile.
+        for model in (Login,Survey,Application,LoanApplication):
+            db.execute(update(model).where(model.user_id.in_(duplicate_ids)).values(user_id=user.id))
     return login_response(db,user,response)
 
 @app.post('/api/auth/telegram')
@@ -338,9 +355,13 @@ class V2Accept(V2Revision):offer_id:str=Field(min_length=1,max_length=200)
 @app.get('/api/v2/companies/{inn}')
 async def company_card_v2(inn:str,user=Depends(current_user)):
     """MOCK: look up the synthetic ЕГРЮЛ/ЕГРИП record for the client's prefilled card."""
-    # SIMPLIFICATION: an authenticated user is not yet bound to this company (see the T25 handoff note).
+    # SIMPLIFICATION: non-demo users are not yet bound to a company; demo profiles are limited to T12.
     if not re.fullmatch(r'\d{10}(?:\d{2})?',inn):
         raise HTTPException(422,'Введите ИНН компании из 10 или 12 цифр')
+    if user.identity and user.identity.startswith('demo:') and DEMO:
+        from .demo_companies import available_demo_inns
+        if inn not in available_demo_inns(workflow.default_pipeline().client.world):
+            raise HTTPException(403,'Выберите компанию из демо-списка.')
     try:
         record=await workflow.default_pipeline().client.fetch(SourceId.EGRUL,inn)
     except SourceNotFound as e:
@@ -358,6 +379,13 @@ async def company_card_v2(inn:str,user=Depends(current_user)):
             'status':record.status,'registered_at':record.registered_at,'okved_main':record.okved_main,
             'region':record.region,'address':record.address,'owner_name':owner.full_name,'owner_inn':owner.inn}
 
+@app.get('/api/v2/demo/companies')
+def demo_companies_v2(user=Depends(current_user)):
+    if not DEMO or not (user.identity or '').startswith('demo:'):
+        return []
+    from .demo_companies import company_options
+    return company_options(workflow.default_pipeline().client.world)
+
 def own_v2(db,id,user):
     a=db.get(LoanApplication,id)
     if not a or (user.role!='staff' and a.user_id!=user.id):raise HTTPException(404,'Заявка не найдена')
@@ -371,6 +399,10 @@ def client_v2(db,id,user,revision):
 
 @app.post('/api/v2/applications')
 def submit_v2(body:V2Submission,user=Depends(current_user),db=Depends(db_session)):
+    if user.identity and user.identity.startswith('demo:') and DEMO:
+        from .demo_companies import available_demo_inns
+        if body.request.get('inn') not in available_demo_inns(workflow.default_pipeline().client.world):
+            raise HTTPException(422,'Выберите компанию из демо-списка.')
     try:a=workflow.submit(db,user.id,f'{user.id}:{body.idempotency_key}',body.request)
     except ValidationError as e:raise HTTPException(422,e.errors(include_url=False,include_context=False,include_input=False))
     except ValueError as e:raise HTTPException(422,str(e))
@@ -501,7 +533,11 @@ class Message(Input):message:str=Field(min_length=1,max_length=1000);question_id
 # --- v2 overdraft pre-approval (T22): the nightly batch's "Вам доступно до X" ---
 @app.get('/api/v2/preapproval')
 def preapproval_v2(inn:str=Query(pattern=r'^\d{10}(\d{2})?$'),user=Depends(current_user)):
-    # SIMPLIFICATION: any logged-in client can ask for any ИНН, as with submitting: there is no user → company link yet (T25).
+    if user.identity and user.identity.startswith('demo:') and DEMO:
+        from .demo_companies import available_demo_inns
+        if inn not in available_demo_inns(workflow.default_pipeline().client.world):
+            raise HTTPException(403,'Предодобрение доступно только для компании из демо-списка.')
+    # SIMPLIFICATION: non-demo client profiles still need a persistent user → company registry (T25).
     result=preapproval.latest(inn)
     if result is None:return None
     return result.model_dump(mode='json') if user.role=='staff' else result.client_view()

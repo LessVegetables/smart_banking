@@ -39,6 +39,7 @@ What we build and why: [SPEC.md](SPEC.md) (in Russian). Contracts between tracks
 | 2026-10-25 | LLM adapter (T24, `apps/api/assistant.py`): any OpenAI-compatible server through `{LLM_BASE_URL}/chat/completions`; the model is on when `LLM_BASE_URL` and `LLM_MODEL` are set, `LLM_API_KEY` is optional (local servers need none). No other switch: `ASSISTANT_LLM_ENABLED` and `OPENAI_*` are gone. No model is bundled in compose; the README shows an open-weights example (Qwen2.5-7B-Instruct via Ollama or vLLM). Timeout 30 s and 500 tokens are code constants. |
 | 2026-10-25 | Demo personas (T12, `apps/world/personas.py`): one company per demo outcome from the default world (seed 42, 5000), the first in world order whose decision passes the target's check; expected outcomes are the conveyor's own, in `apps/world/demo/personas.json`, with other-bank statements for the `PARTIAL` and `THIN` personas in `apps/world/demo/statements/`. Selection reads the hidden archetype and account profile (now stored on `Company`, generator `world-t12-1`), nothing else hidden. The `committee` persona has no offers: no company reaches the committee with one on this world. The econ team confirms the table. |
 | 2026-10-25 | T25 company-card lookup uses `GET /api/v2/companies/{inn}` backed only by the synthetic EGRUL/EGRIP source. It returns public company-card fields and the main owner's INN required to identify the BKI consent subject; it does not bind the logged-in user to that company. |
+| 2026-10-25 | Demo access uses a stable profile per entered name and offers every current T12 persona company. The catalog is intersected with the current synthetic world; if no persona remains, one current company is exposed as a fallback, rebuilding the default world only if the current world itself is empty. A demo profile may submit for any company in that catalog, so changing companies does not strand the demo user. |
 
 ## Open questions
 
@@ -113,6 +114,7 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 | T27 | "Analyzing your business" screen with live per-source status | S | T07, T19 | done | PR #28 |
 | T28 | Offer menu: trade-offs, binding limit, counterfactuals, decline screen, data-quality message | M | T17 | done | PR #29 |
 | T29 | Signing → disbursed happy end + pre-approval banner | S | T21, T22 | done | PR #30 |
+| T29a | Stable demo profile, selectable synthetic companies, v2 application and financing history | M | T12, T19, T21, T25 | done | PR #31 |
 | T30 | Staff dossier: sources, declared vs verified, data-quality metrics, flags, score contributions, limit and price breakdowns, audit log | L | T14–T19 | todo | |
 | T31 | Staff actions UI + committee second signature | M | T20 | todo | |
 | T32 | Risk-manager page with model validation results | S | T11 | todo | |

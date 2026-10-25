@@ -23,11 +23,12 @@ Everything one task leaves for another lives here, filed under the task that has
 
 ## T25 — ИНН entry and consents
 
-- `POST /api/v2/applications` still accepts any request ИНН from any logged-in client: the new registry lookup is not a user → company link. Add ownership binding before relying on demo profiles or exposing company-specific pre-approval. (from T19)
-- The pre-approval banner (T29) uses the company selected in the current tab and requires its three saved application consents, but this is only a UI guard: `GET /api/v2/preapproval?inn=…` still accepts any ИНН and must enforce user → company ownership server-side (`apps/api/main.py`, `preapproval_v2`). The batch assumes a standing 218-ФЗ consent given at account opening (`# MOCK:` in `standing_request`, `apps/api/preapproval.py`); T25's application checkboxes are transient and do not create that consent register. (from T22)
-- T25 removes the v1 persona chooser from the client start path but does not expose T12 persona shortcuts. If the demo needs selectable profiles, expose only curated fields from `apps/world/demo/personas.json`; never show `archetype`. (from T12, `apps/world/PERSONAS.md`)
+- Non-demo client accounts still lack a persistent user → company link. The built-in demo profile is restricted to the current T12 company catalog in `apps/api/main.py`; add a real ownership binding before applying company-specific access rules to Telegram clients (`company_card_v2`, `submit_v2`, `preapproval_v2`). (from T19, T22, T29a)
+- The pre-approval batch assumes a standing 218-ФЗ consent given at account opening (`# MOCK:` in `standing_request`, `apps/api/preapproval.py`); T25's application checkboxes are transient and do not create that consent register. (from T22)
 
-## T29 — signing → disbursed, pre-approval banner
+## T29a — stable demo companies and application history
+
+- The curated T12 persona file can become stale after changing `WORLD_SEED`, `WORLD_N`, `WORLD_AS_OF`, the generator, or policy. Regenerate it with `python -m apps.world.personas`; until then the API exposes a fallback company from the current world (`apps/api/demo_companies.py`). (from T12)
 
 ## T30 — staff dossier
 

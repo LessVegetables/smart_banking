@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from apps.api import preapproval as pa
 from apps.api.contracts import ApplicationStatus as S, DataQualityTier, LegalForm, ProductId, Route, SourceId
 from apps.api.credit_policy import default_policy
-from apps.api.db import PreApprovalRow, Session
+from apps.api.db import PreApprovalRow, Session, User
 from apps.api.features import data_quality_from_responses
 from apps.sources import Scenario, enrich
 from apps.sources.enrichment import MSK
@@ -158,6 +158,9 @@ def test_api(world, results, monkeypatch):
     with TestClient(app) as customer:
         assert customer.get('/api/v2/preapproval', params={'inn': approved.inn}).status_code == 401
         customer.post('/api/auth/demo', json={'name': 'Клиент'})
+        user_id=customer.get('/api/auth/me').json()['id']
+        with Session.begin() as s:
+            s.get(User,user_id).identity='telegram:preapproval-test'
         r = customer.get('/api/v2/preapproval', params={'inn': approved.inn})
         assert r.status_code == 200 and r.json() == approved.client_view()
         assert customer.get('/api/v2/preapproval', params={'inn': UNKNOWN_INN}).json() is None

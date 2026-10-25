@@ -1,6 +1,6 @@
-import {useState,type FormEvent} from 'react';
+import {useEffect,useState,type FormEvent} from 'react';
 import {ArrowLeft,ArrowRight,Building2,Check,LoaderCircle,Search,ShieldCheck} from 'lucide-react';
-import {api,type CompanyCard,type Consent} from './types';
+import {api,type CompanyCard,type Consent,type DemoCompanyOption} from './types';
 import './company-onboarding.css';
 
 export type CompanyStepProgress={inn:string;company:CompanyCard|null;confirmed:boolean;bkiCompany:boolean;bkiOwner:boolean;personalData:boolean};
@@ -11,19 +11,27 @@ const statuses={active:'Действует',liquidating:'В процессе л�
 
 export default function CompanyOnboarding({busy,initialCompany=null,initialConsents=[],initialProgress,onProgressChange,onContinue}:Props){
  const [inn,setInn]=useState(initialProgress?.inn||initialCompany?.inn||''),[company,setCompany]=useState<CompanyCard|null>(initialProgress?.company??initialCompany),[loading,setLoading]=useState(false),[error,setError]=useState('');
+ const [demoCompanies,setDemoCompanies]=useState<DemoCompanyOption[]>([]),[selectedDemoCompany,setSelectedDemoCompany]=useState(''),[catalogLoading,setCatalogLoading]=useState(true),[catalogError,setCatalogError]=useState('');
  const [confirmed,setConfirmed]=useState(initialProgress?.confirmed??(!!initialCompany&&initialConsents.length===3)),[bkiCompany,setBkiCompany]=useState(initialProgress?.bkiCompany??initialConsents.some(c=>c.kind==='bki_company')),[bkiOwner,setBkiOwner]=useState(initialProgress?.bkiOwner??initialConsents.some(c=>c.kind==='bki_owner')),[personalData,setPersonalData]=useState(initialProgress?.personalData??initialConsents.some(c=>c.kind==='personal_data'));
  function emitProgress(next:Partial<CompanyStepProgress>){onProgressChange({inn,company,confirmed,bkiCompany,bkiOwner,personalData,...next});}
  const canLookup=/^\d{10}(\d{2})?$/.test(inn);
  const canContinue=!!company&&confirmed&&bkiCompany&&bkiOwner&&personalData&&!busy;
 
- async function lookup(event:FormEvent){
-  event.preventDefault();
-  if(!canLookup||loading)return;
-  setLoading(true);setError('');setCompany(null);setConfirmed(false);setBkiCompany(false);setBkiOwner(false);setPersonalData(false);emitProgress({inn,company:null,confirmed:false,bkiCompany:false,bkiOwner:false,personalData:false});
-  try{const next=await api<CompanyCard>(`/v2/companies/${inn}`);setCompany(next);emitProgress({inn,company:next});}
+ async function lookupInn(value:string){
+  if(!/^\d{10}(\d{2})?$/.test(value)||loading)return;
+  setInn(value);setLoading(true);setError('');setCompany(null);setConfirmed(false);setBkiCompany(false);setBkiOwner(false);setPersonalData(false);emitProgress({inn:value,company:null,confirmed:false,bkiCompany:false,bkiOwner:false,personalData:false});
+  try{const next=await api<CompanyCard>(`/v2/companies/${value}`);setCompany(next);emitProgress({inn:value,company:next});}
   catch(e){setError((e as Error).message);}
   finally{setLoading(false);}
  }
+ async function lookup(event:FormEvent){event.preventDefault();await lookupInn(inn);}
+
+ useEffect(()=>{let active=true;api<DemoCompanyOption[]>('/v2/demo/companies').then(options=>{
+  if(!active)return;setDemoCompanies(options);if(!options.length)return;
+  const selected=options.find(item=>item.inn===initialCompany?.inn)??options.find(item=>item.inn===initialProgress?.inn)??options[0];
+  setSelectedDemoCompany(selected.persona_id);
+  if(!initialCompany||initialCompany.inn!==selected.inn)void lookupInn(selected.inn);
+ }).catch(e=>{if(active)setCatalogError((e as Error).message);}).finally(()=>{if(active)setCatalogLoading(false);});return()=>{active=false;};},[]);
 
  function proceed(){
   if(!company||!canContinue)return;
@@ -52,18 +60,24 @@ export default function CompanyOnboarding({busy,initialCompany=null,initialConse
   </div>
   {!company?<section className="card v2-lookup-card">
    <span className="icon-tile red"><Search size={22}/></span>
-   <h2>Введите ИНН бизнеса</h2>
-   <p className="muted">Мы проверим номер в синтетическом реестре демо-системы и покажем найденную карточку.</p>
-   <form onSubmit={lookup}>
-    <label className="field-label">ИНН компании
+   <h2>{demoCompanies.length?'Выберите компанию для демо':'Введите ИНН бизнеса'}</h2>
+   <p className="muted">{demoCompanies.length?'Каталог строится по текущим синтетическим персонам; доступен как минимум один вариант.':'Мы проверим номер в синтетическом реестре демо-системы и покажем найденную карточку.'}</p>
+   {catalogLoading&&<p className="v2-hint">Загружаем список компаний…</p>}
+   {catalogError&&<p className="v2-error" role="alert">Не удалось загрузить список компаний. Обновите страницу и попробуйте ещё раз.</p>}
+   {!catalogLoading&&!catalogError&&<form onSubmit={lookup}>
+    {demoCompanies.length>0?<label className="field-label">Синтетическая компания
+     <select aria-label="Синтетическая компания" value={selectedDemoCompany} onChange={event=>{const next=demoCompanies.find(item=>item.persona_id===event.target.value);setSelectedDemoCompany(event.target.value);if(next)void lookupInn(next.inn);}}>
+      {demoCompanies.map(option=><option key={option.persona_id} value={option.persona_id}>{option.title} · {option.company_name} · ИНН {option.inn}</option>)}
+     </select>
+    </label>:<label className="field-label">ИНН компании
      <input aria-label="ИНН компании" type="text" inputMode="numeric" autoComplete="off" maxLength={12} value={inn} onChange={e=>{const value=e.target.value.replace(/\D/g,'').slice(0,12);setInn(value);emitProgress({inn:value,company:null,confirmed:false,bkiCompany:false,bkiOwner:false,personalData:false});}} placeholder="10 или 12 цифр"/>
-    </label>
-    <p className="v2-hint">Для ООО — 10 цифр, для ИП — 12. Проверка контрольной суммы здесь не выполняется.</p>
+    </label>}
+    {demoCompanies.length===0&&<p className="v2-hint">Для ООО — 10 цифр, для ИП — 12. Проверка контрольной суммы здесь не выполняется.</p>}
     {error&&<p className="v2-error" role="alert">{error}</p>}
-    <button className="button primary" disabled={!canLookup||loading}>
-     {loading?<LoaderCircle className="spin" size={17}/>:<Search size={17}/>} Найти компанию
+    <button className="button primary" disabled={demoCompanies.length?loading:!canLookup||loading}>
+     {loading?<LoaderCircle className="spin" size={17}/>:<Search size={17}/>} {demoCompanies.length?'Проверить компанию':'Найти компанию'}
     </button>
-   </form>
+   </form>}
    <p className="v2-demo-note"><ShieldCheck size={15}/> Демо использует только синтетические данные.</p>
   </section>:<div className="v2-company-grid">
    <section className="card v2-company-card">
