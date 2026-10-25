@@ -24,15 +24,10 @@ Everything one task leaves for another lives here, filed under the task that has
 ## T25 — ИНН entry and consents
 
 - `POST /api/v2/applications` still accepts any request ИНН from any logged-in client: the new registry lookup is not a user → company link. Add ownership binding before relying on demo profiles or exposing company-specific pre-approval. (from T19)
-- The pre-approval banner (T29) asks `GET /api/v2/preapproval?inn=…` for any ИНН, so it needs the same user → company link; once it exists, return the pre-approval only for the user's own company (`apps/api/main.py`, `preapproval_v2`). The batch assumes a standing 218-ФЗ consent given at account opening (`# MOCK:` in `standing_request`, `apps/api/preapproval.py`); T25's application checkboxes are transient and do not create that consent register. (from T22)
+- The pre-approval banner (T29) uses the company selected in the current tab and requires its three saved application consents, but this is only a UI guard: `GET /api/v2/preapproval?inn=…` still accepts any ИНН and must enforce user → company ownership server-side (`apps/api/main.py`, `preapproval_v2`). The batch assumes a standing 218-ФЗ consent given at account opening (`# MOCK:` in `standing_request`, `apps/api/preapproval.py`); T25's application checkboxes are transient and do not create that consent register. (from T22)
 - T25 removes the v1 persona chooser from the client start path but does not expose T12 persona shortcuts. If the demo needs selectable profiles, expose only curated fields from `apps/world/demo/personas.json`; never show `archetype`. (from T12, `apps/world/PERSONAS.md`)
 
 ## T29 — signing → disbursed, pre-approval banner
-
-- `accept` already lands in `documents` with `closing.documents` (`doc_id`, `title`, `signer`, `text`); show each with `GET /api/v2/applications/{id}/documents/{doc_id}`. Then `POST .../sign/code` `{"revision"}` → `demo_code` to show on screen (no SMS, `# MOCK:`), and `POST .../sign` `{"code", "revision"}`. A wrong or expired code is 422 `{"detail", "revision"}`: show `detail` as is and send the new `revision` next time (`apps/api/DISBURSEMENT.md`). (from T21)
-- After signing the application is in `conditions`; the worker moves it to `disbursed` within a tick. Poll `GET /api/v2/applications/{id}`: `closing.conditions[].status` per condition, `closing.payout.text` is the happy-end line ("… зачислено на счёт …", "… перечислено поставщику …" or "лимит … установлен"). A `failed` condition keeps it in `conditions`: show that the bank is checking it. (from T21)
-- Banner: `GET /api/v2/preapproval?inn=…` returns `{product, term_months, amount, rate, valid_until, client_text}` or `null` (no pre-approval, or it expired); show `client_text` and send the client to an overdraft application at `amount` (`purpose: cash_gap`, `preferred_product: overdraft`, 12 months). Staff get the full `PreApproval` with the reason (`apps/api/PREAPPROVAL.md`). The world needs a first batch: the worker runs it within a second of start-up, or `POST /api/v2/staff/preapproval/run`. (from T22)
-- The banner persona is `auto_ooo` (ИНН `6163001918`): the batch pre-approves an overdraft up to 2 820 000 ₽ (`preapproval` in `apps/world/demo/personas.json`). (from T12)
 
 ## T30 — staff dossier
 
