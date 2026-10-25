@@ -36,10 +36,7 @@ Everything one task leaves for another lives here, filed under the task that has
 
 ## T31 — staff actions UI
 
-- API: `POST /api/v2/applications/{id}/review` and `.../review/sign`, codes from `GET /api/v2/staff/reason-codes` (per action, plus `reject` for turning a committee proposal down), stats from `GET /api/v2/staff/overrides` (`apps/api/STAFF_ACTIONS.md`). Send `revision`; 409 = stale or waiting for a signature, 422 = text to show as is (e.g. "сумма выше лимита, доступно до …"). (from T20)
-- `outcome: proposed` means the committee: the application stays `in_review` with `pending_review` (proposal, `decision` to sign, `signatures`). The second signer must be the other position and another user. Staff log in with `POST /api/auth/staff` `{"password", "position": "underwriter" | "risk_manager"}`; `GET /api/auth/me` returns `staff_position`. To demo both signatures, use two browser profiles: the session is one cookie. (from T20)
-- The v1 staff screen (`/api/staff/reviews`) still serves v1 applications only; the v2 queue is `GET /api/v2/applications?status=in_review`. (from T20)
-- No persona can demo the committee's two signatures: the `committee` persona (ИНН `3664000050`) reaches the committee route with no offers, because grade D–E companies get a zero limit and grades A–C reach the committee only above the 15M ₽ product maximum. Staff can only decline or request data, which takes one signature. Waiting on the econ team (`things_for_the_econ_team_todo.md`, T12 §3); if they lower the committee bound or DSCR, regenerate the personas. (from T12)
+- No persona can demo the committee's two signatures: the `committee` persona (ИНН `3664000050`) reaches the committee route with no offers, because grade D–E companies get a zero limit and grades A–C reach the committee only above the 15M ₽ product maximum. The T31 screen supports the signature flow, but end-to-end demo still needs an application with a committee proposal. (from T12)
 
 ## T32 — risk-manager page
 
