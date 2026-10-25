@@ -164,3 +164,48 @@ def test_form_change_invalidates_both_requisites(client):
     s=filled(client)
     r=client.patch(f'/api/surveys/{s["id"]}/answers',json={'version':s['version'],'question_id':'form','value':'ip'}).json()
     assert 'inn' not in r['answers'];assert 'ogrn' not in r['answers']
+
+def test_v2_company_lookup_returns_registry_card_and_consent_subjects(client,monkeypatch):
+    import json
+    from pathlib import Path
+    from types import SimpleNamespace
+    from apps.api import main as main_module
+    from apps.api.contracts import EgrulPayload,SourceId
+    from apps.sources import SourceNotFound
+
+    fixtures=Path('tests/fixtures/sources')
+    records={}
+    for file in ('egrul.json','egrip_ip.json'):
+        payload=json.loads((fixtures/file).read_text(encoding='utf-8'))['payload']
+        record=EgrulPayload.model_validate(payload)
+        records[record.inn]=record
+
+    class Client:
+        async def fetch(self,source,inn):
+            assert source==SourceId.EGRUL
+            if inn=='7703999999':raise SourceNotFound(source,inn,'not found')
+            return records[inn]
+
+    monkeypatch.setattr(main_module.workflow,'default_pipeline',lambda:SimpleNamespace(client=Client()))
+    company=client.get('/api/v2/companies/5406000001')
+    assert company.status_code==200,company.text
+    data=company.json()
+    assert data['name']=='ООО «Зёрна»'
+    assert data['legal_form']=='ooo'
+    assert data['owner_name']=='Иванов Алексей Петрович'
+    assert data['owner_inn']=='540600000001'
+    assert 'archetype' not in data and 'q' not in data and 'account_profile' not in data
+
+    entrepreneur=client.get('/api/v2/companies/540700000002')
+    assert entrepreneur.status_code==200,entrepreneur.text
+    assert entrepreneur.json()['legal_form']=='ip'
+    assert entrepreneur.json()['owner_inn']==entrepreneur.json()['inn']
+
+    assert client.get('/api/v2/companies/7703999999').status_code==404
+    assert client.get('/api/v2/companies/not-an-inn').status_code==422
+
+def test_v2_company_lookup_requires_login(client):
+    from fastapi.testclient import TestClient
+    from apps.api.main import app
+    with TestClient(app) as anonymous:
+        assert anonymous.get('/api/v2/companies/5406000001').status_code==401

@@ -23,15 +23,14 @@ Everything one task leaves for another lives here, filed under the task that has
 
 ## T25 — ИНН entry and consents
 
-- Collect both 218-ФЗ consents: `bki_company` with the company's ИНН and `bki_owner` with the main owner's ИНН (for ИП: the entrepreneur's ИНН). Without them БКИ isn't queried and the application can't go past the underwriter. (from T07)
-- ИНН/ОГРН in `tests/fixtures/` fail checksum validation; generated ones pass. If the UI validates checksums, fix the fixtures through a shared-folder PR. (from T01)
-- Submit with `POST /api/v2/applications` `{"idempotency_key", "request"}`: `request` is `ApplicationRequest` without `application_id` / `submitted_at` (`apps/api/WORKFLOW.md`). The request's ИНН isn't checked against the logged-in user: there is no user → company link yet. Add one if demo profiles stand for companies. (from T19)
-- The pre-approval banner (T29) asks `GET /api/v2/preapproval?inn=…` for any ИНН, so it needs the same user → company link; once it exists, return the pre-approval only for the user's own company (`apps/api/main.py`, `preapproval_v2`). The batch assumes a standing 218-ФЗ consent given at account opening (`# MOCK:` in `standing_request`, `apps/api/preapproval.py`); if T25 adds a consent register, read the consents and the owner's ИНН from it. (from T22)
-- Demo profiles are the T12 personas: `apps/world/demo/personas.json` has each persona's ИНН, legal form, `title`, `story` and the `request` to prefill (load it with `read()` from `apps/world/personas.py`). The v1 `apps/api/personas.py` and `GET /api/personas` still serve the v1 questionnaire; replace them. Don't show `archetype`: it's hidden truth for the demo script. (from T12, `apps/world/PERSONAS.md`)
+- `POST /api/v2/applications` still accepts any request ИНН from any logged-in client: the new registry lookup is not a user → company link. Add ownership binding before relying on demo profiles or exposing company-specific pre-approval. (from T19)
+- The pre-approval banner (T29) asks `GET /api/v2/preapproval?inn=…` for any ИНН, so it needs the same user → company link; once it exists, return the pre-approval only for the user's own company (`apps/api/main.py`, `preapproval_v2`). The batch assumes a standing 218-ФЗ consent given at account opening (`# MOCK:` in `standing_request`, `apps/api/preapproval.py`); T25's application checkboxes are transient and do not create that consent register. (from T22)
+- T25 removes the v1 persona chooser from the client start path but does not expose T12 persona shortcuts. If the demo needs selectable profiles, expose only curated fields from `apps/world/demo/personas.json`; never show `archetype`. (from T12, `apps/world/PERSONAS.md`)
 
 ## T26 — need intake
 
 - The product recommendation must use the same purpose → product mapping as the offer generator: `PURPOSE_PRODUCT` in `apps/api/offers.py` (cash gap → overdraft, seasonal gap / contract → credit line, equipment → investment, else working capital). Otherwise the client gets an "other product" offer for the product the intake itself recommended. (from T17)
+- T25 hands the confirmed `CompanyCard` and the three consent records to the next step only in client memory (`v2Company` / `v2Consents` in `apps/web/src/main.tsx`). Add the short need form and submit them with `POST /api/v2/applications`; they are lost on refresh until that step is implemented. (from T25)
 
 ## T27 — "analyzing" screen
 
