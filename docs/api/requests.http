@@ -1,0 +1,138 @@
+# Коллекция запросов v2: клиент → решение → подписание → выдача и сторона сотрудника.
+#
+# Формат — VS Code REST Client (расширение humao.rest-client): запросы выполняются по очереди
+# сверху вниз, значения из ответов подставляются через `# @name` и {{имя.response.body.$.поле}}.
+# Описание всех методов — docs/api/openapi.json и http://127.0.0.1:8000/docs.
+#
+# Клиент и сотрудник работают в разных cookie-сессиях, поэтому у них разные адреса одного
+# сервера: 127.0.0.1 и localhost. Демо-компании и ожидаемые исходы — apps/world/PERSONAS.md.
+# Решение принимает worker: если статус ещё `submitted` / `enriching`, повторите GET через секунду.
+
+@client = http://127.0.0.1:8000
+@staff = http://localhost:8000
+# Значение STAFF_PASSWORD из .env.
+@staffPassword = replace-with-STAFF_PASSWORD
+
+### Сервис жив
+GET {{client}}/api/health
+
+### Клиент: демо-вход (профиль с этим именем стабилен между входами)
+POST {{client}}/api/auth/demo
+Content-Type: application/json
+
+{"name": "Проверка API"}
+
+### Клиент: демо-компании, доступные профилю
+GET {{client}}/api/v2/demo/companies
+
+### Клиент: карточка компании по ИНН (ЕГРЮЛ, персона auto_ooo)
+GET {{client}}/api/v2/companies/6163001918
+
+### Клиент: предодобренный овердрафт (появляется после ночного пакета; null, если его нет)
+GET {{client}}/api/v2/preapproval?inn=6163001918
+
+### Клиент: заявка auto_ooo — ожидается автоматическое одобрение (offered)
+# @name auto
+POST {{client}}/api/v2/applications
+Content-Type: application/json
+
+{
+  "idempotency_key": "requests-http-auto-ooo-1",
+  "request": {
+    "inn": "6163001918", "legal_form": "ooo", "purpose": "inventory",
+    "amount": 3450000, "term_months": 12, "needed_by": "month",
+    "preferred_product": null, "declared_annual_revenue": 66000000, "equipment": null,
+    "consents": [
+      {"kind": "bki_company", "subject_inn": "6163001918", "given_at": "2026-10-24T10:15:00+03:00"},
+      {"kind": "bki_owner", "subject_inn": "616330114659", "given_at": "2026-10-24T10:15:00+03:00"},
+      {"kind": "personal_data", "subject_inn": "616330114659", "given_at": "2026-10-24T10:15:00+03:00"}
+    ]
+  }
+}
+
+### Клиент: статус и предложения (повторите, пока статус не станет offered)
+# @name autoView
+GET {{client}}/api/v2/applications/{{auto.response.body.$.id}}
+
+### Клиент: принять первое предложение
+# @name accepted
+POST {{client}}/api/v2/applications/{{auto.response.body.$.id}}/accept
+Content-Type: application/json
+
+{"offer_id": "{{autoView.response.body.$.decision.offers[0].offer_id}}", "revision": {{autoView.response.body.$.revision}}}
+
+### Клиент: код подписания (MOCK: код показывается в ответе вместо SMS)
+# @name code
+POST {{client}}/api/v2/applications/{{auto.response.body.$.id}}/sign/code
+Content-Type: application/json
+
+{"revision": {{accepted.response.body.$.revision}}}
+
+### Клиент: подписать документы кодом
+POST {{client}}/api/v2/applications/{{auto.response.body.$.id}}/sign
+Content-Type: application/json
+
+{"code": "{{code.response.body.$.demo_code}}", "revision": {{code.response.body.$.application.revision}}}
+
+### Клиент: итог — worker проверяет условия и выдаёт кредит (статус disbursed)
+GET {{client}}/api/v2/applications/{{auto.response.body.$.id}}
+
+### Клиент: заявка underwriter — ИП, оборудование; уходит андеррайтеру (in_review)
+# @name review
+POST {{client}}/api/v2/applications
+Content-Type: application/json
+
+{
+  "idempotency_key": "requests-http-underwriter-1",
+  "request": {
+    "inn": "770300000904", "legal_form": "ip", "purpose": "equipment",
+    "amount": 560000, "term_months": 36, "needed_by": "month",
+    "preferred_product": "investment", "declared_annual_revenue": 4300000,
+    "equipment": {"description": "Производственное оборудование", "price": 800000,
+                  "down_payment": 240000, "supplier_inn": "7703999981"},
+    "consents": [
+      {"kind": "bki_owner", "subject_inn": "770300000904", "given_at": "2026-10-24T10:15:00+03:00"},
+      {"kind": "personal_data", "subject_inn": "770300000904", "given_at": "2026-10-24T10:15:00+03:00"}
+    ]
+  }
+}
+
+### Сотрудник: вход андеррайтера
+POST {{staff}}/api/auth/staff
+Content-Type: application/json
+
+{"password": "{{staffPassword}}", "position": "underwriter"}
+
+### Сотрудник: очередь на рассмотрение
+GET {{staff}}/api/v2/applications?status=in_review
+
+### Сотрудник: досье заявки (факты, качество данных, скоринг, лимит, маршрут)
+# @name dossier
+GET {{staff}}/api/v2/applications/{{review.response.body.$.id}}
+
+### Сотрудник: журнал событий заявки
+GET {{staff}}/api/v2/applications/{{review.response.body.$.id}}/events
+
+### Сотрудник: коды причин для решений
+GET {{staff}}/api/v2/staff/reason-codes
+
+### Сотрудник: одобрить предложения системы
+POST {{staff}}/api/v2/applications/{{review.response.body.$.id}}/review
+Content-Type: application/json
+
+{"action": "approve", "reason_code": "confirmed_by_review", "comment": "Данные подтверждены при проверке.", "revision": {{dossier.response.body.$.revision}}}
+
+### Клиент: после одобрения у заявки снова статус offered
+GET {{client}}/api/v2/applications/{{review.response.body.$.id}}
+
+### Сотрудник: вход риск-менеджера (заменяет сессию андеррайтера на localhost)
+POST {{staff}}/api/auth/staff
+Content-Type: application/json
+
+{"password": "{{staffPassword}}", "position": "risk_manager"}
+
+### Риск-менеджер: валидация скоринговой модели
+GET {{staff}}/api/v2/staff/model-validation
+
+### Риск-менеджер: статистика переопределений
+GET {{staff}}/api/v2/staff/overrides

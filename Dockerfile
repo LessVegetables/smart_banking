@@ -19,6 +19,12 @@ COPY config ./config
 COPY alembic.ini ./alembic.ini
 COPY run.py ./
 COPY --from=frontend /build/dist ./dist
+# The default world (seed 42, 5000 companies), written once at build time, so the API and
+# the worker read it instead of regenerating it (~5 s) on their first v2 request. Demo
+# personas (apps/world/demo) are picked from this world. SIMPLIFICATION: while apps/world/out exists,
+# WORLD_SEED / WORLD_N / WORLD_AS_OF have no effect (apps/sources/service.py, load_world).
+RUN python -m apps.world
+COPY THIRD_PARTY_NOTICES.md ./
 RUN useradd --create-home appuser && mkdir -p /app/data && chown appuser:appuser /app/data
 USER appuser
 EXPOSE 8000

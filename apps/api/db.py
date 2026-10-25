@@ -1,3 +1,4 @@
+import logging
 import os
 import uuid
 from datetime import datetime, timezone
@@ -155,3 +156,10 @@ def init_db():
                 # A new install builds its initial schema from the immutable baseline.
                 command.upgrade(config,'0001_baseline')
         command.upgrade(config,'head')
+    configure_logging()
+
+def configure_logging():
+    """Alembic's fileConfig in init_db sets the root logger to WARN; the app's level comes from LOG_LEVEL."""
+    root=logging.getLogger()
+    if not root.handlers:logging.basicConfig(format='%(levelname)-5.5s [%(name)s] %(message)s')
+    root.setLevel(os.environ.get('LOG_LEVEL','INFO').strip().upper() or 'INFO')
