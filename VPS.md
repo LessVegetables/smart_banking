@@ -1,6 +1,9 @@
 # Развёртывание на VPS
 
-Как показать прототип с сервера: тот же Docker-образ, что в README, плюс Caddy для HTTP/HTTPS на портах 80 и 443. Стек описан в `compose.vps.yaml`, запуск — `deploy.sh`, настройки Caddy — `deploy/Caddyfile`.
+Как показать прототип с сервера: тот же Docker-образ, что в README, за обратным прокси с HTTPS. Два варианта:
+
+- **Caddy** — всё в Docker: стек `compose.vps.yaml`, запуск `deploy.sh`, настройки `deploy/Caddyfile`. Разделы ниже до «Вариант с nginx».
+- **nginx** на самом сервере перед `compose.yaml`: `deploy/nginx/`, раздел «Вариант с nginx».
 
 ## Что нужно
 
@@ -62,9 +65,59 @@ docker compose --env-file .env.vps -f compose.vps.yaml stop
 
 Повторный запуск и обновление после `git pull` — снова `bash deploy.sh <адрес>`. PostgreSQL и сертификаты хранятся в томах Docker: остановка и пересборка их сохраняют. Для переноса на другой сервер отдельно переносите резервную копию БД.
 
-Если на сервере уже работает Nginx или другой сервис на 80/443, используйте `compose.yaml` из README (API привязан к `127.0.0.1:8000`) и направьте свой reverse proxy на этот адрес; в `.env` задайте публичный `APP_ORIGIN`.
+## Вариант с nginx
 
-## Отличия от локального запуска
+Если на сервере уже работает nginx (или другой сервис на 80/443), Caddy не нужен: стек поднимается из `compose.yaml` на `127.0.0.1:8000`, а nginx принимает HTTPS и проксирует на этот адрес. `deploy.sh` в этом варианте не запускайте — он поднимает Caddy на тех же портах. Готовый конфиг для домена `etobank.ru` — `deploy/nginx/etobank.ru.conf`; для другого домена замените имя в `server_name` и путях сертификата.
+
+`compose.yaml` рассчитан на локальный запуск и задаёт `APP_ORIGIN=http://127.0.0.1:8000`. За nginx браузер присылает `Origin: https://etobank.ru`, и API отвечает 403 на любой изменяющий запрос. Поэтому стек запускается вместе с `deploy/nginx/compose.nginx.yaml`, который берёт `APP_ORIGIN` и `COOKIE_SECURE` из `.env`.
+
+1. DNS: записи A (и AAAA, если есть IPv6) для `etobank.ru` указывают на сервер.
+2. `.env` в папке с кодом: `python3 scripts/init_env.py` создаёт его со случайными `STAFF_PASSWORD` и `POSTGRES_PASSWORD` (или `cp .env.example .env` и задайте их сами). Затем в `.env`:
+
+   ```dotenv
+   APP_ORIGIN=https://etobank.ru
+   COOKIE_SECURE=true
+   ```
+
+3. Стек:
+
+   ```bash
+   docker compose -f compose.yaml -f deploy/nginx/compose.nginx.yaml up -d --build --wait
+   ```
+
+4. Сертификат Let's Encrypt (Ubuntu / Debian), до включения конфига — блок 443 без сертификата не пройдёт `nginx -t`:
+
+   ```bash
+   sudo apt install nginx certbot python3-certbot-nginx
+   sudo certbot certonly --nginx -d etobank.ru --deploy-hook "systemctl reload nginx"
+   ```
+
+   `certonly` только получает сертификат и не меняет конфиги nginx. Продление выполняет таймер certbot; после продления nginx перезагружается.
+
+5. Конфиг nginx:
+
+   ```bash
+   sudo cp deploy/nginx/etobank.ru.conf /etc/nginx/sites-available/etobank.ru
+   sudo ln -s /etc/nginx/sites-available/etobank.ru /etc/nginx/sites-enabled/etobank.ru
+   sudo nginx -t
+   sudo systemctl reload nginx
+   ```
+
+После этого кабинет — https://etobank.ru/, рабочее место — https://etobank.ru/staff, mini app — https://etobank.ru/mini/. Конфиг проверен `nginx -t` на версиях 1.18, 1.24 и 1.27; на 1.25 и новее nginx предупреждает, что `listen … http2` устарел, — это не ошибка (можно заменить на `listen 443 ssl;` и `http2 on;`).
+
+Что делает конфиг: HTTP → HTTPS, TLS 1.2–1.3, HSTS, gzip, тело запроса до 12 МБ (загрузка выписок — до 5 файлов по 2 МБ), заголовки `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`. Заголовка `X-Frame-Options` нет намеренно: веб-версия Telegram открывает mini app во фрейме.
+
+Управление — те же команды Compose с двумя файлами:
+
+```bash
+docker compose -f compose.yaml -f deploy/nginx/compose.nginx.yaml ps
+docker compose -f compose.yaml -f deploy/nginx/compose.nginx.yaml logs -f --tail=100 api worker
+docker compose -f compose.yaml -f deploy/nginx/compose.nginx.yaml up -d --build --wait
+```
+
+В этом варианте сервисы читают `.env` целиком, как при локальном запуске: сценарий отказа БКИ для персоны `source_down` и остальные `MOCK_SOURCES_*`, `SCORECARD_*`, `LOG_LEVEL`, `SOURCE_*` работают.
+
+## Отличия от локального запуска (вариант с Caddy)
 
 - `compose.vps.yaml` передаёт сервисам только явный список переменных, без `MOCK_SOURCES_*`, `SCORECARD_*`, `LOG_LEVEL` и `SOURCE_*`. Поэтому на VPS персона `source_down` получает обычный ответ БКИ и решается автоматически, а уровень журнала — по умолчанию. Это известное ограничение (`docs/v2/NOTES.md`, Unassigned).
 - Синтетический мир, как и в README, собирается в образ при сборке; `WORLD_*` не действуют.

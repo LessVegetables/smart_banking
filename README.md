@@ -178,7 +178,7 @@ config/              кредитная политика с версиями (з
 docs/                аналитика, спецификация v2, OpenAPI и коллекция запросов
 tests/               тесты и примеры контрактов (tests/fixtures/)
 scripts/             служебные скрипты: .env, экспорт OpenAPI, сторонние лицензии
-deploy/, compose.vps.yaml, deploy.sh   развёртывание на VPS (VPS.md)
+deploy/, compose.vps.yaml, deploy.sh   развёртывание на VPS: Caddy или nginx (VPS.md)
 misc/                материалы кейса и рабочие заметки
 ```
 

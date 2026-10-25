@@ -124,7 +124,7 @@
 | `# SIMPLIFICATION:` очередь заявок — колонка `status`, которую опрашивает worker | `apps/api/workflow.py` | Брокер сообщений или workflow-движок с очередью ошибок |
 | Docker-образ содержит мир по умолчанию, собранный при `docker build` (`RUN python -m apps.world`): `WORLD_SEED` / `WORLD_N` / `WORLD_AS_OF` в Docker действуют, только если `WORLD_DIR` указывает на пустую папку | `Dockerfile` | — (данные приходят из источников, а не из генератора) |
 | `# MOCK:` в `.env.example` персона `source_down` получает отказ БКИ (`MOCK_SOURCES_SCENARIOS`) | `.env.example` | — |
-| VPS-стек (`compose.vps.yaml`) не передаёт переменные `MOCK_SOURCES_*`, `SCORECARD_*`, `LOG_LEVEL`, `SOURCE_*`: там `source_down` получает обычный ответ БКИ | `compose.vps.yaml`, [VPS.md](../VPS.md) | — |
+| VPS-стек с Caddy (`compose.vps.yaml`) не передаёт переменные `MOCK_SOURCES_*`, `SCORECARD_*`, `LOG_LEVEL`, `SOURCE_*`: там `source_down` получает обычный ответ БКИ. Вариант с nginx читает `.env` целиком | `compose.vps.yaml`, [VPS.md](../VPS.md) | — |
 
 ## ИИ-ассистент
 

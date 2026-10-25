@@ -1,0 +1,14 @@
+# Override for running behind your own reverse proxy (nginx, VPS.md):
+#   docker compose -f compose.yaml -f deploy/nginx/compose.nginx.yaml up -d --build
+# compose.yaml pins APP_ORIGIN to http://127.0.0.1:8000 for local use; behind HTTPS the browser sends
+# Origin: https://<domain>, and the API refuses changing requests from any other origin (403).
+# Set APP_ORIGIN=https://etobank.ru and COOKIE_SECURE=true in .env.
+services:
+  api:
+    environment:
+      APP_ORIGIN: ${APP_ORIGIN:?Set APP_ORIGIN in .env to the public https address}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+  worker:
+    environment:
+      APP_ORIGIN: ${APP_ORIGIN:?Set APP_ORIGIN in .env to the public https address}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
