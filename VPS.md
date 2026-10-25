@@ -67,15 +67,15 @@ docker compose --env-file .env.vps -f compose.vps.yaml stop
 
 ## Вариант с nginx
 
-Если на сервере уже работает nginx (или другой сервис на 80/443), Caddy не нужен: стек поднимается из `compose.yaml` на `127.0.0.1:8000`, а nginx принимает HTTPS и проксирует на этот адрес. `deploy.sh` в этом варианте не запускайте — он поднимает Caddy на тех же портах. Готовый конфиг для домена `etobank.ru` — `deploy/nginx/etobank.ru.conf`; для другого домена замените имя в `server_name` и путях сертификата.
+Если на сервере уже работает nginx (или другой сервис на 80/443), Caddy не нужен: стек поднимается из `compose.yaml` на `127.0.0.1:8000`, а nginx принимает HTTPS и проксирует на этот адрес. `deploy.sh` в этом варианте не запускайте — он поднимает Caddy на тех же портах. Готовый конфиг для домена `etabank.ru` — `deploy/nginx/etabank.ru.conf`; для другого домена замените имя в `server_name` и путях сертификата.
 
-`compose.yaml` рассчитан на локальный запуск и задаёт `APP_ORIGIN=http://127.0.0.1:8000`. За nginx браузер присылает `Origin: https://etobank.ru`, и API отвечает 403 на любой изменяющий запрос. Поэтому стек запускается вместе с `deploy/nginx/compose.nginx.yaml`, который берёт `APP_ORIGIN` и `COOKIE_SECURE` из `.env`.
+`compose.yaml` рассчитан на локальный запуск и задаёт `APP_ORIGIN=http://127.0.0.1:8000`. За nginx браузер присылает `Origin: https://etabank.ru`, и API отвечает 403 на любой изменяющий запрос. Поэтому стек запускается вместе с `deploy/nginx/compose.nginx.yaml`, который берёт `APP_ORIGIN` и `COOKIE_SECURE` из `.env`.
 
-1. DNS: записи A (и AAAA, если есть IPv6) для `etobank.ru` и `умныйкредитныйкабинет.рф` указывают на сервер.
+1. DNS: записи A (и AAAA, если есть IPv6) для `etabank.ru` и `умныйкредитныйкабинет.рф` указывают на сервер.
 2. `.env` в папке с кодом: `python3 scripts/init_env.py` создаёт его со случайными `STAFF_PASSWORD` и `POSTGRES_PASSWORD` (или `cp .env.example .env` и задайте их сами). Затем в `.env`:
 
    ```dotenv
-   APP_ORIGIN=https://etobank.ru
+   APP_ORIGIN=https://etabank.ru
    COOKIE_SECURE=true
    ```
 
@@ -89,7 +89,7 @@ docker compose --env-file .env.vps -f compose.vps.yaml stop
 
    ```bash
    sudo apt install nginx certbot python3-certbot-nginx
-   sudo certbot certonly --nginx -d etobank.ru --deploy-hook "systemctl reload nginx"
+   sudo certbot certonly --nginx -d etabank.ru --deploy-hook "systemctl reload nginx"
    sudo certbot certonly --nginx -d xn--80achddpccdgernff2bzbib6ni.xn--p1ai --deploy-hook "systemctl reload nginx"
    ```
 
@@ -100,15 +100,15 @@ docker compose --env-file .env.vps -f compose.vps.yaml stop
 5. Конфиг nginx:
 
    ```bash
-   sudo cp deploy/nginx/etobank.ru.conf /etc/nginx/sites-available/etobank.ru
-   sudo ln -s /etc/nginx/sites-available/etobank.ru /etc/nginx/sites-enabled/etobank.ru
+   sudo cp deploy/nginx/etabank.ru.conf /etc/nginx/sites-available/etabank.ru
+   sudo ln -s /etc/nginx/sites-available/etabank.ru /etc/nginx/sites-enabled/etabank.ru
    sudo nginx -t
    sudo systemctl reload nginx
    ```
 
-После этого кабинет — https://etobank.ru/, рабочее место — https://etobank.ru/staff, mini app — https://etobank.ru/mini/. Конфиг проверен `nginx -t` на версиях 1.18, 1.24 и 1.27; на 1.25 и новее nginx предупреждает, что `listen … http2` устарел, — это не ошибка (можно заменить на `listen 443 ssl;` и `http2 on;`).
+После этого кабинет — https://etabank.ru/, рабочее место — https://etabank.ru/staff, mini app — https://etabank.ru/mini/. Конфиг проверен `nginx -t` на версиях 1.18, 1.24 и 1.27; на 1.25 и новее nginx предупреждает, что `listen … http2` устарел, — это не ошибка (можно заменить на `listen 443 ssl;` и `http2 on;`).
 
-Что делает конфиг: `умныйкредитныйкабинет.рф` (по HTTP и HTTPS) перенаправляет на `https://etobank.ru` с тем же путём и строкой запроса; если в ссылке нет `utm_source`, добавляется `utm_source=rf_domain`, чтобы в аналитике был виден этот домен (`/staff?utm_source=tg` → `https://etobank.ru/staff?utm_source=tg`, `/staff?utm_campaign=x` → `https://etobank.ru/staff?utm_campaign=x&utm_source=rf_domain`, `/` → `https://etobank.ru/?utm_source=rf_domain`). Метку меняет `map` в начале блока `.рф`; HTTP → HTTPS, TLS 1.2–1.3, HSTS, gzip, тело запроса до 12 МБ (загрузка выписок — до 5 файлов по 2 МБ), заголовки `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`. Заголовка `X-Frame-Options` нет намеренно: веб-версия Telegram открывает mini app во фрейме.
+Что делает конфиг: `умныйкредитныйкабинет.рф` (по HTTP и HTTPS) перенаправляет на `https://etabank.ru` с тем же путём и строкой запроса; если в ссылке нет `utm_source`, добавляется `utm_source=rf_domain`, чтобы в аналитике был виден этот домен (`/staff?utm_source=tg` → `https://etabank.ru/staff?utm_source=tg`, `/staff?utm_campaign=x` → `https://etabank.ru/staff?utm_campaign=x&utm_source=rf_domain`, `/` → `https://etabank.ru/?utm_source=rf_domain`). Метку меняет `map` в начале блока `.рф`; HTTP → HTTPS, TLS 1.2–1.3, HSTS, gzip, тело запроса до 12 МБ (загрузка выписок — до 5 файлов по 2 МБ), заголовки `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`. Заголовка `X-Frame-Options` нет намеренно: веб-версия Telegram открывает mini app во фрейме.
 
 Управление — те же команды Compose с двумя файлами:
 
