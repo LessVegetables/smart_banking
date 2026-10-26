@@ -16,7 +16,7 @@ export interface V2ClosingDocument {doc_id:string;title:string;signer:string;tex
 export interface V2ClosingCondition {code:string;title:string;status:'pending'|'met'|'failed'}
 export interface V2Application {id:string;status:string;status_text:string;revision:number;request:V2StoredRequest;created:string;updated:string;decision:V2ClientDecision|null;events:{at:string;status:string;message:string}[];sources:V2SourceProgress[];selected_offer_id:string|null;closing?:{offer_id:string;documents:V2ClosingDocument[];code:{expires_at:string;attempts_left:number}|null;signature:unknown;conditions:V2ClosingCondition[];payout:{text:string}|null}|null}
 export interface V2PreApproval {product:string;term_months:number;amount:number;rate:number;valid_until:string;client_text:string}
-export interface V2StaffFact {name:string;declared_value:string|number|boolean|null;verified_value:string|number|boolean|null;source:string|null;trust_level:string;fetched_at:string|null;discrepancy:number|null}
+export interface V2StaffFact {name:string;verified_value:string|number|boolean|null;source:string|null;trust_level:string;fetched_at:string|null}
 export interface V2DataQualityMetric {value:number|null;tier:string}
 export interface V2DataQuality {history_months:V2DataQualityMetric;revenue_coverage:V2DataQualityMetric;operating_inflow_share:V2DataQualityMetric;regularity_months:V2DataQualityMetric;revenue_basis:string|null;tier:string;client_message:string;policy_version:string}
 export interface V2StaffReason {code:string;staff_text:string;client_text:string}

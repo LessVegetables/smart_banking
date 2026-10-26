@@ -571,5 +571,6 @@ def application_json(db: OrmSession, app: LoanApplication, *, staff: bool) -> di
     sources = [{k: r[k] for k in ('source', 'status', 'requested_at', 'received_at', 'latency_ms', 'attempts', 'error')}
                for r in (app.enrichment or {}).get('responses', [])]
     return {**base, 'decision': app.decision, 'data_quality': app.data_quality, 'sources': sources,
-            'facts': [f.model_dump(mode='json') for f in load_facts(db, app.id)], 'attempts': app.attempts,
+            'facts': [f.model_dump(mode='json', exclude={'declared_value', 'discrepancy'})
+                      for f in load_facts(db, app.id) if f.verified_value is not None], 'attempts': app.attempts,
             'pending_review': app.pending_review, 'statements': app.statements, 'events': [event_json(e) for e in history]}
