@@ -41,6 +41,7 @@ What we build and why: [SPEC.md](SPEC.md) (in Russian). Contracts between tracks
 | 2026-10-25 | T25 company-card lookup uses `GET /api/v2/companies/{inn}` backed only by the synthetic EGRUL/EGRIP source. It returns public company-card fields and the main owner's INN required to identify the BKI consent subject; it does not bind the logged-in user to that company. |
 | 2026-10-25 | Demo access uses a stable profile per entered name and offers every current T12 persona company. The catalog is intersected with the current synthetic world; if no persona remains, one current company is exposed as a fallback, rebuilding the default world only if the current world itself is empty. A demo profile may submit for any company in that catalog, so changing companies does not strand the demo user. |
 | 2026-10-26 | Analytics docs for the built system live in `docs/` (T35): `PROCESS.md`, `DATA_MODEL.md`, `SLA.md`, `SIMPLIFICATIONS.md` (the simplification registry; new `# MOCK:` / `# SIMPLIFICATION:` markers get a row there). `docs/v2/` stays the planning set. `README.md`, `ARCHITECTURE.md` and `VPS.md` describe v2 only; v1 leftovers are to be deleted, not documented. |
+| 2026-10-26 | The client types the company ИНН by hand; the UI no longer lists the demo persona catalog, so the cabinet looks like a real one. The API still limits a demo profile to the T12 catalog (2026-10-25); the UI shows that 403 as "company not linked to your profile". `GET /api/v2/demo/companies` stays for company names in the applications list. |
 
 ## Open questions
 
