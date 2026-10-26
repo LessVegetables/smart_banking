@@ -2,7 +2,10 @@
 
 Документация прототипа кредитного конвейера для малого и микробизнеса.
 
-**Демо:** [etabank.ru](https://etabank.ru/) · **Документация:** [docs.etabank.ru](https://docs.etabank.ru/)
+**Демо:** [etabank.ru](https://etabank.ru/)<br>
+**Сотрудник банка:** [etabank.ru/staff](https://etabank.ru/staff) (пароль: `k5T8GcrVzQZQMtMgKbWgGSOtx5O10k9y`)<br>
+**Документация:** [docs.etabank.ru](https://docs.etabank.ru/)<br>
+**Синтетический мир:** [etabank.ru/organizers](https://etabank.ru/organizers)
 
 Начните с [полной карты документации](docs/README.md), чтобы выбрать маршрут по роли. Для быстрого запуска откройте [руководство](README.md); для кредитной логики — [спецификацию v2](docs/v2/SPEC.md).
 
