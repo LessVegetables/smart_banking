@@ -1,0 +1,30 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Pull and restart on VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          command_timeout: 15m
+          script: |
+            set -euo pipefail
+            cd "${{ vars.VPS_APP_DIR }}"
+            git pull --ff-only origin main
+            docker compose -f compose.yaml -f deploy/nginx/compose.nginx.yaml up -d --build --wait
+            docker image prune -f

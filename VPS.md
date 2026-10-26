@@ -118,6 +118,8 @@ docker compose -f compose.yaml -f deploy/nginx/compose.nginx.yaml logs -f --tail
 docker compose -f compose.yaml -f deploy/nginx/compose.nginx.yaml up -d --build --wait
 ```
 
+Автодеплой: при push в `main` workflow `.github/workflows/deploy.yml` заходит на сервер по SSH, делает `git pull --ff-only` в папке с кодом и выполняет последнюю команду выше. В настройках репозитория GitHub (Settings → Secrets and variables → Actions) задайте секреты `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` (закрытый ключ, открытый — в `~/.ssh/authorized_keys` пользователя на сервере), при нестандартном порте — `VPS_PORT`, и переменную `VPS_APP_DIR` — абсолютный путь к папке с кодом. Пользователю нужен доступ к Docker и право делать `git pull` (для приватного репозитория — deploy key).
+
 В этом варианте сервисы читают `.env` целиком, как при локальном запуске: сценарий отказа БКИ для персоны `source_down` и остальные `MOCK_SOURCES_*`, `SCORECARD_*`, `LOG_LEVEL`, `SOURCE_*` работают.
 
 ## Отличия от локального запуска (вариант с Caddy)
