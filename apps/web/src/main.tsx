@@ -8,6 +8,7 @@ import ApplicationAnalysis from './application-analysis';
 import StaffDossier from './staff-dossier';
 import DemoLogin,{displayName} from './demo-login';
 import './styles.css';
+import Organis from './organis';
 
 const isMini=location.pathname.startsWith('/mini');
 const prefix=isMini?'/mini':'';
@@ -110,7 +111,7 @@ function Empty({icon:Icon,title,text,action,onClick}:{icon:React.ElementType;tit
 
 function Chat({onClose,ensureUser,applicationId}:{onClose:()=>void;ensureUser:()=>Promise<User>;applicationId?:string}){const [messages,setMessages]=useState([{role:'assistant',text:'Здравствуйте! Помогу разобраться в вопросах и условиях финансирования. Сейчас работаю в справочном режиме.'}]),[input,setInput]=useState(''),[loading,setLoading]=useState(false);async function send(text:string){if(!text.trim()||loading)return;setInput('');setMessages(m=>[...m,{role:'user',text}]);setLoading(true);try{await ensureUser();const r=await api<{message:string}>('/assistant/messages','POST',{message:text,application_id:applicationId});setMessages(m=>[...m,{role:'assistant',text:r.message}]);}catch(e){setMessages(m=>[...m,{role:'assistant',text:(e as Error).message}]);}finally{setLoading(false);}}return <aside className="chat-panel"><header><span className="icon-tile red"><Sparkles size={21}/></span><div><b>Ваш помощник</b><small>Справочный режим</small></div><button className="icon-button" onClick={onClose} aria-label="Закрыть помощника"><X size={20}/></button></header><div className="chat-messages">{messages.map((m,i)=><p key={i} className={'chat-message '+m.role}>{m.text}</p>)}{loading&&<LoaderCircle size={18} className="spin"/>}</div><div className="chat-suggestions">{['Как устроена кредитная линия?','Какие ставки в демо?'].map(s=><button key={s} onClick={()=>send(s)}>{s}</button>)}</div><form onSubmit={e=>{e.preventDefault();send(input);}}><input aria-label="Сообщение помощнику" value={input} maxLength={1000} onChange={e=>setInput(e.target.value)} placeholder="Ваш вопрос…"/><button aria-label="Отправить" disabled={loading||!input.trim()}><Send size={19}/></button></form><small className="chat-note">Решения принимает расчётный движок. Помощник объясняет.</small></aside>;}
 
-function mount(){tg=(window as any).Telegram?.WebApp;createRoot(document.getElementById('root')!).render(<App/>);}
+function mount(){tg=(window as any).Telegram?.WebApp;createRoot(document.getElementById('root')!).render(location.pathname.replace(/\/$/,'')==='/organis'?<Organis/>:<App/>);}
 if(isMini&&!tg){
  const script=document.createElement('script');script.src='https://telegram.org/js/telegram-web-app.js';
  let mounted=false;const ready=()=>{if(!mounted){mounted=true;mount();}};

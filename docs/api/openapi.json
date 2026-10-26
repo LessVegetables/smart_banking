@@ -5,6 +5,56 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/api/organis/sources": {
+      "get": {
+        "summary": "Organiser Sources",
+        "operationId": "organiser_sources_api_organis_sources_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update Organiser Sources",
+        "operationId": "update_organiser_sources_api_organis_sources_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Configuration"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "summary": "Health",
@@ -1061,6 +1111,29 @@
         ],
         "title": "CollateralType"
       },
+      "Configuration": {
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Revision"
+          },
+          "sources": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SourceOverride"
+            },
+            "type": "object",
+            "title": "Sources"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "revision",
+          "sources"
+        ],
+        "title": "Configuration"
+      },
       "DemoLogin": {
         "properties": {
           "name": {
@@ -1148,6 +1221,37 @@
           "credit_line"
         ],
         "title": "ProductId"
+      },
+      "SourceOverride": {
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "default",
+              "ok",
+              "error",
+              "timeout"
+            ],
+            "title": "Outcome",
+            "default": "default"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 30000.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SourceOverride"
       },
       "StaffLogin": {
         "properties": {

@@ -143,6 +143,7 @@ def payload(company: Company, source: SourceId) -> BaseModel:
 
 class MockSourceService:
     def __init__(self, world: World, settings: Settings | None = None):
+        self.overrides = None  # Optional shared configuration provider, installed by the live API.
         self.world = world
         self.settings = settings or Settings()
         self._by_inn = {company.inn: company for company in world.companies}
@@ -166,14 +167,20 @@ class MockSourceService:
             self._calls[inn, source] += 1
             call = self._calls[inn, source]
         rng = random.Random(f'{self.world.meta.seed}:{inn}:{source.value}:{call}')
+        override = (self.overrides() if self.overrides else {}).get(source.value, {})
         behaviour = self.settings.behaviour[source]
         outcome = self._outcome(rng, source, inn, call, behaviour)
+
+        forced = override.get('outcome', 'default')
+        if forced != 'default':
+            outcome = forced
 
         if outcome == 'timeout':
             await asyncio.sleep(self.settings.hang_seconds)
             raise SourceTimeout(source, inn, f'{source.value}: no answer in {self.settings.hang_seconds:g} s')
         latency_ms = behaviour.median_ms * math.exp(rng.gauss(0, behaviour.sigma))
-        await asyncio.sleep(latency_ms * self.settings.latency_scale / 1000)
+        delay = override.get('latency_ms')
+        await asyncio.sleep((delay if delay is not None else latency_ms * self.settings.latency_scale) / 1000)
         if outcome == 'error':
             raise SourceUnavailable(source, inn, f'{source.value}: the source is unavailable')
         company = self._by_inn.get(inn)

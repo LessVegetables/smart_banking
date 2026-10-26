@@ -59,5 +59,5 @@ def test_fresh_database_uses_baseline_migration(tmp_path, monkeypatch):
     tables = set(inspect(engine).get_table_names())
     assert {'users', 'applications', 'application_facts', 'preapprovals', 'alembic_version'} <= tables
     with engine.connect() as connection:
-        assert connection.exec_driver_sql('SELECT version_num FROM alembic_version').scalar_one() == '0007_statements'
+        assert connection.exec_driver_sql('SELECT version_num FROM alembic_version').scalar_one() == '0008_mock_source_config'
     engine.dispose()

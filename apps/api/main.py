@@ -24,7 +24,7 @@ from .worker import loop
 from .credit_policy import default_policy
 from .assistant import explain
 from .contracts import CollateralType, EgrulPayload, ProductId, SourceId
-from . import disbursement, preapproval, staff_actions, statements, workflow
+from . import organis, disbursement, preapproval, staff_actions, statements, workflow
 from apps.sources import SourceNotFound, SourceTimeout, SourceUnavailable
 from apps.ml.validation import ValidationReport
 
@@ -89,6 +89,21 @@ class Input(BaseModel):model_config=ConfigDict(extra='forbid')
 class DemoLogin(Input):name:str=Field(default='Алексей',min_length=1,max_length=80)
 class TelegramLogin(Input):init_data:str=Field(max_length=10000)
 class StaffLogin(Input):password:str=Field(max_length=200);position:staff_actions.Position=staff_actions.Position.UNDERWRITER
+
+def organiser(user=Depends(staff)):
+    if not DEMO:raise HTTPException(404)
+    return user
+
+
+@app.get('/api/organis/sources')
+def organiser_sources(user=Depends(organiser),db=Depends(db_session)):
+    return organis.read(db)
+
+
+@app.put('/api/organis/sources')
+def update_organiser_sources(body:organis.Configuration,user=Depends(organiser),db=Depends(db_session)):
+    return organis.save(db,body,user.id)
+
 
 @app.get('/api/health')
 def health():return {'ok':True,'demo':DEMO,'policy_version':default_policy().version}

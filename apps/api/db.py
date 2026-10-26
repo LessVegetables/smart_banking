@@ -87,6 +87,15 @@ class PreApprovalRow(Base):
     computed_at:Mapped[str]=mapped_column(String,index=True)
     valid_until:Mapped[str|None]=mapped_column(String,nullable=True)  # ISO date
     result:Mapped[dict]=mapped_column(JSON)
+class MockSourceConfig(Base):
+    __tablename__='mock_source_config'
+    id:Mapped[int]=mapped_column(Integer,primary_key=True)
+    revision:Mapped[int]=mapped_column(Integer,nullable=False)
+    settings:Mapped[dict]=mapped_column(JSON,nullable=False)
+    updated_at:Mapped[str|None]=mapped_column(String,nullable=True)
+    updated_by:Mapped[str|None]=mapped_column(String,nullable=True)
+
+
 def init_db():
     """Adopt the pre-Alembic schema when present, then apply versioned migrations."""
     config=Config(str(Path(__file__).resolve().parents[2]/'alembic.ini'))

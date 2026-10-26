@@ -156,3 +156,4 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 | ID | Task | Size | Depends on | Status | Owner / PR |
 |---|---|---|---|---|---|
 | T38 | Remove unused v1 runtime, routes, storage dependencies and build artifacts; use v2 assistant context; preserve historical database migrations and data | M | T35 | done | Local cleanup; 474 tests, TypeScript and production build passed |
+| T39 | Organizer page /organis: shared mock-source behavior, staff access and live API/worker configuration | M | T38 | done | Local implementation; 485 tests, TypeScript and production build passed |
