@@ -1,6 +1,6 @@
 import {useEffect,useState,type FormEvent} from 'react';
 import {ArrowLeft,ArrowRight,Check,Package,Wallet} from 'lucide-react';
-import type {EquipmentInfo,NeedRequest,NeededBy,ProductId,Purpose} from './types';
+import {productNames,type EquipmentInfo,type NeedRequest,type NeededBy,type ProductId,type Purpose} from './types';
 import './need-intake.css';
 
 export interface NeedDraft {
@@ -20,7 +20,6 @@ const purposeOptions:{id:Purpose;label:string;hint:string}[]=[
  {id:'other',label:'Другая задача',hint:'Расскажите, сколько и на какой срок нужно'},
 ];
 const recommended:Record<Purpose,ProductId>={inventory:'working_capital',payroll_rent:'working_capital',equipment:'investment',cash_gap:'overdraft',seasonal_gap:'credit_line',contract:'credit_line',other:'working_capital'};
-const productNames:Record<ProductId,string>={overdraft:'Овердрафт',working_capital:'Оборотный кредит',investment:'Инвестиционный кредит',credit_line:'Кредитная линия'};
 const emptyDraft:NeedDraft={purpose:'',amount:'',term:'',needed_by:'',equipment_description:'',equipment_price:'',equipment_down_payment:'',equipment_supplier_inn:''};
 
 export default function NeedIntake({busy,initialValue,onDraftChange,onSubmit,companyName,companyInn,onBack}:Props){
@@ -37,7 +36,7 @@ export default function NeedIntake({busy,initialValue,onDraftChange,onSubmit,com
   onSubmit({purpose:draft.purpose,amount,term_months:term,needed_by:draft.needed_by,preferred_product:product,declared_annual_revenue:null,equipment:equipmentInfo});
  }
  return <div className="content v2-onboarding need-intake">
-  <p className="eyebrow">ШАГ 2 ИЗ 2 · ПОТРЕБНОСТЬ В ФИНАНСИРОВАНИИ</p><h1>На что нужны деньги?<span className="hello-dot">.</span></h1>
+  <p className="eyebrow">ШАГ 2 ИЗ 2 · ПОТРЕБНОСТЬ В ФИНАНСИРОВАНИИ</p><h1>На что нужны деньги?</h1>
   <p className="lead">Ответьте на несколько вопросов — подберём подходящий формат для вашего бизнеса.</p>
   <div className="need-company"><span className="need-company-icon"><Wallet size={18}/></span><div><b>{companyName}</b><small>ИНН {companyInn} · карточка и согласия сохранены в этой вкладке</small></div></div>
   <form onSubmit={submit} className="need-form">
@@ -46,7 +45,7 @@ export default function NeedIntake({busy,initialValue,onDraftChange,onSubmit,com
     {draft.purpose&&<div className="need-recommendation"><Package size={18}/><span>Подходящий продукт</span><b>{productNames[recommended[draft.purpose]]}</b></div>}
    </section>
    <section className="card need-section"><div className="need-section-heading"><span>02</span><div><h2>Сумма и срок</h2><p>Укажите желаемые параметры</p></div></div>
-    <div className="need-fields two"><label className="field-label">Сколько нужно<input type="number" min="1" step="1000" inputMode="numeric" value={draft.amount} onChange={e=>update('amount',e.target.value)} placeholder="Например, 1 000 000"/><small>В рублях</small></label>
+    <div className="need-fields two"><label className="field-label">Сколько нужно<input type="number" min="1" step="1" inputMode="numeric" value={draft.amount} onChange={e=>update('amount',e.target.value)} placeholder="Например, 1 000 000"/><small>В рублях</small></label>
      <label className="field-label">На какой срок<input type="number" min="1" max="120" step="1" inputMode="numeric" value={draft.term} onChange={e=>update('term',e.target.value)} placeholder="Например, 24"/><small>Месяцев, от 1 до 120</small></label></div>
    </section>
    <section className="card need-section"><div className="need-section-heading"><span>03</span><div><h2>Когда нужны деньги?</h2><p>Это поможет понять срочность запроса</p></div></div>
@@ -54,7 +53,7 @@ export default function NeedIntake({busy,initialValue,onDraftChange,onSubmit,com
    </section>
    {equipment&&<section className="card need-section"><div className="need-section-heading"><span>04</span><div><h2>Что планируете купить?</h2><p>Эти данные нужны для инвестиционного предложения</p></div></div>
     <div className="need-fields"><label className="field-label">Оборудование<input value={draft.equipment_description} onChange={e=>update('equipment_description',e.target.value)} placeholder="Например, производственный станок"/></label>
-     <div className="need-fields two"><label className="field-label">Стоимость оборудования<input type="number" min="1" step="1000" value={draft.equipment_price} onChange={e=>update('equipment_price',e.target.value)} placeholder="В рублях"/></label><label className="field-label">Собственный взнос<input type="number" min="0" step="1000" value={draft.equipment_down_payment} onChange={e=>update('equipment_down_payment',e.target.value)} placeholder="В рублях"/></label></div>
+     <div className="need-fields two"><label className="field-label">Стоимость оборудования<input type="number" min="1" step="1" value={draft.equipment_price} onChange={e=>update('equipment_price',e.target.value)} placeholder="В рублях"/></label><label className="field-label">Собственный взнос<input type="number" min="0" step="1" value={draft.equipment_down_payment} onChange={e=>update('equipment_down_payment',e.target.value)} placeholder="В рублях"/></label></div>
      <label className="field-label">ИНН поставщика<input inputMode="numeric" maxLength={12} value={draft.equipment_supplier_inn} onChange={e=>update('equipment_supplier_inn',e.target.value.replace(/\D/g,'').slice(0,12))} placeholder="10 или 12 цифр"/></label>
      {downPayment>price&&<p className="need-validation" role="alert">Собственный взнос не может быть больше стоимости оборудования.</p>}
     </div>

@@ -1,6 +1,6 @@
 .v2-onboarding{max-width:1120px;margin:0 auto}
 .v2-onboarding>.lead{max-width:760px}
-.v2-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:25px 0 22px}
+.v2-steps{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:25px 0 22px}
 .v2-steps>span{display:flex;align-items:center;gap:10px;min-height:48px;padding:10px 14px;border:1px solid #e4e8dc;border-radius:9px;background:#fff;color:#929d85;font-size:11px}
 .v2-steps>span b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#eef2e8;color:#71815e;font-size:11px}
 .v2-steps>span.current{border-color:#e83226;color:#414938}
