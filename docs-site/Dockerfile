@@ -3,10 +3,11 @@ FROM python:3.12-slim AS build
 WORKDIR /src
 RUN pip install --no-cache-dir mkdocs-material==9.7.7
 
-COPY docs-site/mkdocs.yml ./mkdocs.yml
+COPY docs-site/mkdocs.yml docs-site/hooks.py ./
 
 # MkDocs refuses a docs_dir that contains mkdocs.yml, so the pages go into a child folder (docs_dir: content).
 WORKDIR /src/content
+COPY docs-site/index.md ./index.md
 COPY README.md ARCHITECTURE.md VPS.md AGENTS.md THIRD_PARTY_NOTICES.md ./
 COPY docs ./docs
 COPY deploy/Caddyfile ./deploy/

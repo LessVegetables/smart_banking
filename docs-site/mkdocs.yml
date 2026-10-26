@@ -4,6 +4,13 @@ site_url: https://docs.etabank.ru/
 docs_dir: content
 site_dir: /site
 
+# The root README.md is served at /guide/ by hooks.py; skipping it here avoids the clash with index.md.
+exclude_docs: |
+  /README.md
+
+hooks:
+  - hooks.py
+
 theme:
   name: material
   language: ru
@@ -29,7 +36,8 @@ markdown_extensions:
       permalink: true
 
 nav:
-  - Главная: README.md
+  - Главная: index.md
+  - Руководство и запуск: README.md
   - Архитектура: ARCHITECTURE.md
   - Аналитика:
       - Полная карта документов: docs/README.md
