@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Альфа · Бизнес — Demo API",
+    "title": "Эта · Бизнес — Demo API",
     "version": "1.0.0"
   },
   "paths": {
