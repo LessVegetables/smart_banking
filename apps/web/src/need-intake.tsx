@@ -1,4 +1,4 @@
-import {useEffect,useState,type FormEvent} from 'react';
+import {useEffect,useLayoutEffect,useRef,useState,type FormEvent,type InputHTMLAttributes} from 'react';
 import {ArrowLeft,ArrowRight,Check,Package,Wallet} from 'lucide-react';
 import {productNames,type EquipmentInfo,type NeedRequest,type NeededBy,type ProductId,type Purpose} from './types';
 import './need-intake.css';
@@ -20,6 +20,22 @@ const purposeOptions:{id:Purpose;label:string;hint:string}[]=[
  {id:'other',label:'Другая задача',hint:'Расскажите, сколько и на какой срок нужно'},
 ];
 const recommended:Record<Purpose,ProductId>={inventory:'working_capital',payroll_rent:'working_capital',equipment:'investment',cash_gap:'overdraft',seasonal_gap:'credit_line',contract:'credit_line',other:'working_capital'};
+// Ruble amounts: the draft keeps the raw number ("1000000.50"), the field shows it grouped ("1 000 000.50").
+const groupDigits=(raw:string)=>{const [whole,fraction]=raw.split('.');const grouped=whole.replace(/\B(?=(\d{3})+(?!\d))/g,' ');return fraction===undefined?grouped:`${grouped}.${fraction}`;};
+function rawAmount(text:string){
+ let s=text.replace(/,/g,'.').replace(/[^\d.]/g,'');const dot=s.indexOf('.');
+ if(dot>=0)s=s.slice(0,dot+1)+s.slice(dot+1).replace(/\./g,'').slice(0,2);
+ return s.replace(/^0+(?=\d)/,'').replace(/^\./,'0.');
+}
+function AmountInput({value,onValue,...rest}:{value:string;onValue:(raw:string)=>void}&Omit<InputHTMLAttributes<HTMLInputElement>,'value'|'onChange'|'type'>){
+ const ref=useRef<HTMLInputElement>(null),caret=useRef<number|null>(null);
+ const shown=groupDigits(value);
+ // Reformatting moves the caret to the end: put it back after the same number of digits.
+ useLayoutEffect(()=>{const input=ref.current,wanted=caret.current;caret.current=null;if(!input||wanted===null||document.activeElement!==input)return;
+  let pos=0,seen=0;while(pos<shown.length&&seen<wanted){if(shown[pos]!==' ')seen++;pos++;}input.setSelectionRange(pos,pos);});
+ return <input {...rest} ref={ref} type="text" inputMode="decimal" value={shown} onChange={e=>{const input=e.target;caret.current=rawAmount(input.value.slice(0,input.selectionStart??input.value.length)).length;onValue(rawAmount(input.value));}}/>;
+}
+
 const emptyDraft:NeedDraft={purpose:'',amount:'',term:'',needed_by:'',equipment_description:'',equipment_price:'',equipment_down_payment:'',equipment_supplier_inn:''};
 
 export default function NeedIntake({busy,initialValue,onDraftChange,onSubmit,companyName,companyInn,onBack}:Props){
@@ -45,7 +61,7 @@ export default function NeedIntake({busy,initialValue,onDraftChange,onSubmit,com
     {draft.purpose&&<div className="need-recommendation"><Package size={18}/><span>Подходящий продукт</span><b>{productNames[recommended[draft.purpose]]}</b></div>}
    </section>
    <section className="card need-section"><div className="need-section-heading"><span>02</span><div><h2>Сумма и срок</h2><p>Укажите желаемые параметры</p></div></div>
-    <div className="need-fields two"><label className="field-label">Сколько нужно<input type="number" min="1" step="1" inputMode="numeric" value={draft.amount} onChange={e=>update('amount',e.target.value)} placeholder="Например, 1 000 000"/><small>В рублях</small></label>
+    <div className="need-fields two"><label className="field-label">Сколько нужно<AmountInput value={draft.amount} onValue={value=>update('amount',value)} placeholder="Например, 1 000 000"/><small>В рублях</small>{amount>0&&!Number.isInteger(amount)&&<p className="need-validation" role="alert">Укажите сумму в целых рублях, без копеек.</p>}</label>
      <label className="field-label">На какой срок<input type="number" min="1" max="120" step="1" inputMode="numeric" value={draft.term} onChange={e=>update('term',e.target.value)} placeholder="Например, 24"/><small>Месяцев, от 1 до 120</small></label></div>
    </section>
    <section className="card need-section"><div className="need-section-heading"><span>03</span><div><h2>Когда нужны деньги?</h2><p>Это поможет понять срочность запроса</p></div></div>
