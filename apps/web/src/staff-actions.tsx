@@ -1,11 +1,10 @@
 import {useEffect,useMemo,useState} from 'react';
 import {Check,RefreshCw,ShieldCheck} from 'lucide-react';
-import {api,money,type User,type V2StaffApplication,type V2StaffOverrides,type V2StaffReasonCodes} from './types';
+import {api,money,productNames,type User,type V2StaffApplication,type V2StaffOverrides,type V2StaffReasonCodes} from './types';
 import './staff-actions.css';
 
 type Action='approve'|'change'|'decline'|'request_data'|'rerun';
 const actionNames:Record<Action,string>={approve:'Одобрить предложения',change:'Изменить предложение',decline:'Отказать',request_data:'Запросить данные',rerun:'Перезапустить расчёт'};
-const productNames:Record<string,string>={overdraft:'Овердрафт',working_capital:'Оборотный кредит',investment:'Инвестиционный кредит',credit_line:'Кредитная линия'};
 const positionNames={underwriter:'Андеррайтер',risk_manager:'Риск-менеджер'} as const;
 
 export default function StaffActions({app,user,onUpdated}:{app:V2StaffApplication;user:User;onUpdated:()=>Promise<void>}){

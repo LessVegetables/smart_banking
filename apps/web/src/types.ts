@@ -50,6 +50,7 @@ export async function api<T>(path:string,method='GET',body?:unknown):Promise<T>{
  if(!res.ok){let text='Не удалось выполнить запрос';try{const j=await res.json();text=typeof j.detail==='string'?j.detail:'Проверьте заполненные поля';}catch{if(res.status===502)text='Сервер пока недоступен. Проверьте запуск API.';}throw new Error(text);}
  return res.json();
 }
+export const productNames:Record<string,string>={overdraft:'Овердрафт',working_capital:'Оборотный кредит',investment:'Инвестиционный кредит',credit_line:'Кредитная линия'};
 export const money=(n:number)=>new Intl.NumberFormat('ru-RU',{maximumFractionDigits:0}).format(n)+' ₽';
 export const compact=(n:number)=>n>=1000000?new Intl.NumberFormat('ru-RU',{maximumFractionDigits:1}).format(n/1000000)+' млн ₽':money(n);
 export const statuses:Record<string,string>={submitted:'Заявка подана',checking:'Проверяем данные',scoring:'Рассчитываем условия',approved:'Предварительно одобрено',counteroffer:'Есть предложение',needs_data:'Нужны документы',manual_review:'На рассмотрении',declined:'Сейчас недоступно',signing:'Ожидает подписания',issued:'Выдача смоделирована',closed:'Заявка закрыта'};

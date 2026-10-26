@@ -1,6 +1,6 @@
 import {useEffect,useState,type FormEvent} from 'react';
 import {ArrowLeft,ArrowRight,Check,Package,Wallet} from 'lucide-react';
-import type {EquipmentInfo,NeedRequest,NeededBy,ProductId,Purpose} from './types';
+import {productNames,type EquipmentInfo,type NeedRequest,type NeededBy,type ProductId,type Purpose} from './types';
 import './need-intake.css';
 
 export interface NeedDraft {
@@ -20,7 +20,6 @@ const purposeOptions:{id:Purpose;label:string;hint:string}[]=[
  {id:'other',label:'Другая задача',hint:'Расскажите, сколько и на какой срок нужно'},
 ];
 const recommended:Record<Purpose,ProductId>={inventory:'working_capital',payroll_rent:'working_capital',equipment:'investment',cash_gap:'overdraft',seasonal_gap:'credit_line',contract:'credit_line',other:'working_capital'};
-const productNames:Record<ProductId,string>={overdraft:'Овердрафт',working_capital:'Оборотный кредит',investment:'Инвестиционный кредит',credit_line:'Кредитная линия'};
 const emptyDraft:NeedDraft={purpose:'',amount:'',term:'',needed_by:'',equipment_description:'',equipment_price:'',equipment_down_payment:'',equipment_supplier_inn:''};
 
 export default function NeedIntake({busy,initialValue,onDraftChange,onSubmit,companyName,companyInn,onBack}:Props){
