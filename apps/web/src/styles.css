@@ -9,3 +9,5 @@
 .mini .sidebar{display:none}.mini .main{margin-left:0}.mini .content{max-width:900px}.mini .topbar{padding-left:max(22px,calc((100vw - 856px)/2));padding-right:max(22px,calc((100vw - 856px)/2))}.mini .hero-copy{width:100%}.mini .hero-art{opacity:.5}.mini .hero h2{font-size:34px}.mini .date-pill{display:none}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 .v2-application-row{align-items:center}.v2-application-row>div{min-width:0}.v2-application-row>div>b,.v2-application-row>div>small{overflow-wrap:anywhere}.v2-application-row .application-payout{color:#6e8755;font-weight:500}.v2-application-row>.status{max-width:190px;white-space:normal;line-height:1.45}
+/* Room under the last button on every page so the fixed assistant launcher never covers a primary action. */
+.app:not(.mini) .main{padding-bottom:76px}
