@@ -54,9 +54,8 @@ export default function CompanyOnboarding({busy,initialCompany=null,initialConse
   <h1>Проверим карточку бизнеса<span className="hello-dot">.</span></h1>
   <p className="lead">Введите ИНН, сверьте сведения из реестра и оформите согласия до подачи заявки.</p>
   <div className="v2-steps" aria-label="Этапы заявки">
-   <span className={!company?'current':''}><b>1</b> ИНН компании</span>
-   <span className={company?'current':''}><b>2</b> Карточка и согласия</span>
-   <span><b>3</b> Потребность</span>
+   <span className="current"><b>1</b> Компания и согласия</span>
+   <span><b>2</b> Потребность</span>
   </div>
   {!company?<section className="card v2-lookup-card">
    <span className="icon-tile red"><Search size={22}/></span>

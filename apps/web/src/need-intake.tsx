@@ -37,7 +37,7 @@ export default function NeedIntake({busy,initialValue,onDraftChange,onSubmit,com
   onSubmit({purpose:draft.purpose,amount,term_months:term,needed_by:draft.needed_by,preferred_product:product,declared_annual_revenue:null,equipment:equipmentInfo});
  }
  return <div className="content v2-onboarding need-intake">
-  <p className="eyebrow">ШАГ 2 ИЗ 2 · ПОТРЕБНОСТЬ В ФИНАНСИРОВАНИИ</p><h1>На что нужны деньги?<span className="hello-dot">.</span></h1>
+  <p className="eyebrow">ШАГ 2 ИЗ 2 · ПОТРЕБНОСТЬ В ФИНАНСИРОВАНИИ</p><h1>На что нужны деньги?</h1>
   <p className="lead">Ответьте на несколько вопросов — подберём подходящий формат для вашего бизнеса.</p>
   <div className="need-company"><span className="need-company-icon"><Wallet size={18}/></span><div><b>{companyName}</b><small>ИНН {companyInn} · карточка и согласия сохранены в этой вкладке</small></div></div>
   <form onSubmit={submit} className="need-form">
