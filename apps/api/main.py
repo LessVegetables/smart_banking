@@ -42,7 +42,7 @@ async def lifespan(app):
     stop.set()
     if thread:thread.join(timeout=3)
 
-app=FastAPI(title='Альфа · Бизнес — Demo API',version='1.0.0',lifespan=lifespan)
+app=FastAPI(title='Эта · Бизнес — Demo API',version='1.0.0',lifespan=lifespan)
 
 @app.exception_handler(StaleDataError)
 async def stale_error(request,exc):return JSONResponse(status_code=409,content={'detail':'Данные изменились в другом окне. Обновите страницу.'})

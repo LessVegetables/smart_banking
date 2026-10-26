@@ -14,7 +14,7 @@ export default function DemoLogin({busy,onSubmit,onStaff}:Props){
  const valid=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)&&value.length<=80;
  function submit(event:FormEvent){event.preventDefault();if(valid&&!busy)onSubmit(value);}
  return <div className="content demo-login">
-  <span className="brand"><span className="alpha-mark">А<span/></span><div>Альфа<span>Бизнес</span></div></span>
+  <span className="brand"><span className="eta-mark">η<span/></span><div>Эта<span>Бизнес</span></div></span>
   <section className="card v2-lookup-card">
    <span className="icon-tile red"><LogIn size={22}/></span>
    <p className="eyebrow">ВХОД В КАБИНЕТ</p>
