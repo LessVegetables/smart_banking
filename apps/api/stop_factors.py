@@ -30,8 +30,8 @@ def _reason(code: str, staff: str, client: str | None = None) -> Reason:
 
 @lru_cache(maxsize=1)
 def _okved_rules() -> dict:
-    """Use the already published v1 policy lists; T14 does not change shared config."""
-    path = Path(__file__).resolve().parents[2] / 'config' / 'rules.json'
+    """Industry restrictions preserved from the original policy."""
+    path = Path(__file__).resolve().parents[2] / 'config' / 'stop_factors.json'
     return json.loads(path.read_text(encoding='utf-8'))
 
 

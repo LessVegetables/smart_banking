@@ -11,7 +11,7 @@
 
 ## Работа над v2 (читать первым)
 
-Кредитный конвейер построен по спецификации v2. Остатки v1 (`apps/api/engine.py`, `apps/api/catalog.py`, `config/rules.json`, анкета из 43 вопросов) в сценарии не участвуют и подлежат удалению (`docs/v2/NOTES.md`, Unassigned); новую логику на них не строить. Как устроено то, что есть, — `README.md`, `ARCHITECTURE.md` и `docs/` (`PROCESS.md`, `DATA_MODEL.md`, `SLA.md`, `SIMPLIFICATIONS.md`).
+Кредитный конвейер построен по спецификации v2. Код v1 удалён в T38; рабочая логика находится в `apps/api/workflow.py` и модулях v2. Исторические миграции сохранены для обновления существующих баз. Как устроено то, что есть, — `README.md`, `ARCHITECTURE.md` и `docs/` (`PROCESS.md`, `DATA_MODEL.md`, `SLA.md`, `SIMPLIFICATIONS.md`).
 
 Перед началом работы прочитай:
 

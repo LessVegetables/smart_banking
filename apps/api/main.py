@@ -19,17 +19,16 @@ from sqlalchemy import select, update
 from sqlalchemy.orm.exc import StaleDataError
 from sqlalchemy.exc import IntegrityError
 
-from .db import Session, User, Login, Survey, Application, SubmissionKey, Document, Job, LoanApplication, DATA, now, init_db, uid
-from .catalog import RULES, PRODUCTS, QUESTIONS, active_questions, clean_answers, validate_answer, business_age_months, ROOT
-from .engine import evaluate
-from .personas import PERSONAS, persona_answers
-from .worker import loop, event, save_decision
-from .storage import storage
+from .db import Session, User, Login, LoanApplication, init_db
+from .worker import loop
+from .credit_policy import default_policy
 from .assistant import explain
 from .contracts import CollateralType, EgrulPayload, ProductId, SourceId
 from . import disbursement, preapproval, staff_actions, statements, workflow
 from apps.sources import SourceNotFound, SourceTimeout, SourceUnavailable
 from apps.ml.validation import ValidationReport
+
+ROOT=Path(__file__).resolve().parents[2]
 
 DEMO=os.environ.get('DEMO_MODE','true').lower()=='true'
 COOKIE_SECURE=os.environ.get('COOKIE_SECURE','false').lower()=='true'
@@ -80,11 +79,6 @@ def risk_manager(user=Depends(staff)):
     if user.staff_position!='risk_manager':raise HTTPException(403,'Нужен доступ риск-менеджера')
     return user
 
-def own(db,model,id,user):
-    obj=db.get(model,id)
-    if not obj or (user.role!='staff' and obj.user_id!=user.id):raise HTTPException(404,'Объект не найден')
-    return obj
-
 def login_response(db,user,response):
     token=secrets.token_urlsafe(40)
     db.add(Login(token=hashlib.sha256(token.encode()).hexdigest(),user_id=user.id,expires=time.time()+7*86400))
@@ -97,7 +91,7 @@ class TelegramLogin(Input):init_data:str=Field(max_length=10000)
 class StaffLogin(Input):password:str=Field(max_length=200);position:staff_actions.Position=staff_actions.Position.UNDERWRITER
 
 @app.get('/api/health')
-def health():return {'ok':True,'demo':DEMO,'rules':RULES['version']}
+def health():return {'ok':True,'demo':DEMO,'policy_version':default_policy().version}
 
 @app.post('/api/auth/demo')
 def demo_login(body:DemoLogin,response:Response,db=Depends(db_session)):
@@ -118,7 +112,7 @@ def demo_login(body:DemoLogin,response:Response,db=Depends(db_session)):
     duplicate_ids=[old.id for old in legacy if old.id!=user.id]
     if duplicate_ids:
         # Merge prior anonymous demo sessions so their saved applications remain visible to this profile.
-        for model in (Login,Survey,Application,LoanApplication):
+        for model in (Login,LoanApplication):
             db.execute(update(model).where(model.user_id.in_(duplicate_ids)).values(user_id=user.id))
     return login_response(db,user,response)
 
@@ -171,188 +165,10 @@ def link(body:LinkToken,user=Depends(current_user),db=Depends(db_session)):
     if user.role!='customer' or not owner or owner.role!='customer' or not user.identity or not user.identity.startswith('telegram:') or owner.identity:
         raise HTTPException(409,'Привязку нужно подтвердить из нового Telegram-аккаунта к веб-кабинету без существующей привязки')
     identity=user.identity;user.identity=None;db.flush();owner.identity=identity
-    for model in (Survey,Application):db.execute(update(model).where(model.user_id==user.id).values(user_id=owner.id))
+    for model in (LoanApplication,):db.execute(update(model).where(model.user_id==user.id).values(user_id=owner.id))
     db.execute(update(Login).where(Login.user_id==user.id).values(user_id=owner.id))
     return {'ok':True}
 
-@app.get('/api/catalog')
-def catalog():return {'products':list(PRODUCTS.values()),'sections':['Задача','Бизнес','Финансы','Обязательства','Детали'],'version':RULES['version'],'questionnaire_version':RULES['questionnaire_version'],'demo':DEMO}
-
-@app.get('/api/personas')
-def personas():return [{k:v for k,v in p.items() if k!='answers'} for p in PERSONAS] if DEMO else []
-
-def survey_json(s):
-    active=active_questions(s.answers)
-    return {'id':s.id,'version':s.version,'answers':clean_answers(s.answers),'questions':active,'all_questions_count':len(QUESTIONS),'complete':all(q['id'] in s.answers for q in active)}
-
-@app.get('/api/surveys/current')
-def current_survey(user=Depends(current_user),db=Depends(db_session)):
-    s=db.scalar(select(Survey).where(Survey.user_id==user.id).order_by(Survey.created.desc()))
-    if not s:s=Survey(user_id=user.id,answers={},history=[]);db.add(s);db.flush()
-    return survey_json(s)
-
-@app.post('/api/surveys')
-def new_survey(user=Depends(current_user),db=Depends(db_session)):
-    s=Survey(user_id=user.id,answers={},history=[]);db.add(s);db.flush();return survey_json(s)
-
-class AnswerInput(Input):version:int;question_id:str;value:Any
-@app.patch('/api/surveys/{id}/answers')
-def answer(id:str,body:AnswerInput,user=Depends(current_user),db=Depends(db_session)):
-    s=own(db,Survey,id,user)
-    question=next((q for q in active_questions(s.answers) if q['id']==body.question_id),None)
-    if not question:raise HTTPException(422,'Вопрос не относится к текущему сценарию')
-    try:value=validate_answer(question,body.value,s.answers)
-    except ValueError as e:raise HTTPException(422,str(e))
-    changed={**s.answers,body.question_id:value};changed=clean_answers(changed)
-    # Invalidate derived dependent values when their source changes.
-    if body.question_id=='revenue':changed.pop('monthly',None)
-    if body.question_id=='form':changed.pop('inn',None);changed.pop('ogrn',None)
-    hist=[*s.history,{'at':now(),'question':body.question_id,'previous':s.answers.get(body.question_id),'value':value}]
-    count=db.execute(update(Survey).where(Survey.id==id,Survey.version==body.version).values(answers=changed,history=hist,version=Survey.version+1)).rowcount
-    if not count:raise HTTPException(409,'Анкета изменилась в другом окне. Обновите страницу.')
-    db.expire(s);return survey_json(s)
-
-@app.post('/api/surveys/{id}/persona/{persona}')
-def fill_persona(id:str,persona:str,user=Depends(current_user),db=Depends(db_session)):
-    if not DEMO:raise HTTPException(404)
-    s=own(db,Survey,id,user)
-    try:a=persona_answers(persona)
-    except ValueError:raise HTTPException(404)
-    s.answers=clean_answers(a);s.version+=1;s.history=[*s.history,{'at':now(),'action':'demo_persona','persona':persona}]
-    return survey_json(s)
-
-def complete(s):
-    a=clean_answers(s.answers)
-    for q in active_questions(a):
-        if q['id'] not in a:raise HTTPException(422,f'Заполните вопрос: {q["title"]}')
-        try:validate_answer(q,a[q['id']],a)
-        except ValueError as e:raise HTTPException(422,str(e))
-    if a.get('has_debt')=='yes' and a.get('payments',0)>a.get('debt',0):raise HTTPException(422,'Месячные платежи не могут превышать указанный остаток долга')
-    if a.get('purpose')=='equipment' and a.get('down_payment',0)>a.get('equipment_cost',0):raise HTTPException(422,'Собственные средства превышают стоимость покупки')
-    a['age']=business_age_months(a['registered_at'])
-    return a
-
-class VersionInput(Input):version:int
-@app.post('/api/surveys/{id}/recommendations')
-def recommend(id:str,body:VersionInput,user=Depends(current_user),db=Depends(db_session)):
-    s=own(db,Survey,id,user)
-    if s.version!=body.version:raise HTTPException(409,'Версия анкеты изменилась')
-    return {'preliminary':True,'survey_version':s.version,**evaluate(complete(s))}
-
-class Submission(Input):survey_id:str;version:int;confirmed:bool;idempotency_key:str=Field(min_length=10,max_length=100)
-@app.post('/api/applications')
-def submit(body:Submission,user=Depends(current_user),db=Depends(db_session)):
-    if not body.confirmed:raise HTTPException(422,'Подтвердите подачу заявки')
-    key=f'{user.id}:{body.idempotency_key}'
-    saved_key=db.get(SubmissionKey,key)
-    if saved_key:return application_json(own(db,Application,saved_key.application_id,user),db)
-    s=own(db,Survey,body.survey_id,user)
-    if s.version!=body.version:raise HTTPException(409,'Анкета изменилась. Проверьте сводку ещё раз.')
-    # One application per survey snapshot, even if another client uses a new key.
-    snapshot_key=f'{user.id}:{s.id}:{s.version}'
-    old=db.scalar(select(Application).where(Application.submission_key==snapshot_key))
-    if old:
-        db.add(SubmissionKey(key=key,application_id=old.id))
-        return application_json(old,db)
-    a=Application(user_id=user.id,survey_id=s.id,submission_key=snapshot_key,answers=complete(s),policy_snapshot=RULES,events=[],decisions=[])
-    db.add(a);db.flush();event(a,'submitted','Заявка подтверждена и подана');db.add(Job(application_id=a.id));db.add(SubmissionKey(key=key,application_id=a.id))
-    return application_json(a,db)
-
-def application_json(a,db):
-    db.flush()
-    docs=db.scalars(select(Document).where(Document.application_id==a.id)).all()
-    return {'id':a.id,'revision':a.revision,'status':a.status,'name':a.answers.get('name'),'answers':a.answers,'created':a.created,'events':a.events,'decision':a.decisions[-1] if a.decisions else None,'decisions':a.decisions,'selected_offer':a.selected_offer,'offer_expires':a.offer_expires,'documents':[{'id':d.id,'name':d.name,'size':d.size,'status':d.status,'created':d.created} for d in docs]}
-
-@app.get('/api/applications')
-def applications(user=Depends(current_user),db=Depends(db_session)):
-    rows=db.scalars(select(Application).where(Application.user_id==user.id).order_by(Application.created.desc())).all()
-    return [application_json(a,db) for a in rows]
-
-@app.get('/api/applications/{id}')
-def application(id:str,user=Depends(current_user),db=Depends(db_session)):return application_json(own(db,Application,id,user),db)
-
-class Action(Input):action:str;offer_index:int=0;revision:int
-@app.post('/api/applications/{id}/actions')
-def action(id:str,body:Action,user=Depends(current_user),db=Depends(db_session)):
-    a=own(db,Application,id,user)
-    if a.revision!=body.revision:raise HTTPException(409,'Заявка изменилась. Обновите её.')
-    if body.action=='accept' and a.status in ('approved','counteroffer'):
-        if not a.offer_expires or a.offer_expires<time.time():raise HTTPException(409,'Срок предложения истёк. Подайте новую версию заявки.')
-        offers=a.decisions[-1]['offers']
-        if not 0<=body.offer_index<len(offers):raise HTTPException(422,'Предложение не найдено')
-        a.selected_offer=offers[body.offer_index];event(a,'signing','Условия приняты. Доступно демонстрационное подписание.')
-    elif body.action=='sign' and a.status=='signing':event(a,'issued','Демонстрационное подписание и выдача завершены. Реальные деньги не переводились.')
-    elif body.action=='decline' and a.status=='counteroffer':event(a,'closed','Клиент отклонил предложение')
-    elif body.action=='retry' and a.status=='checking':db.add(Job(application_id=a.id));event(a,'checking','Повтор проверки запрошен')
-    else:raise HTTPException(409,'Действие недоступно в текущем статусе')
-    a.revision+=1;return application_json(a,db)
-
-@app.post('/api/applications/{id}/documents')
-async def upload(id:str,file:UploadFile=File(...),user=Depends(current_user),db=Depends(db_session)):
-    a=own(db,Application,id,user)
-    if a.status not in ('needs_data','manual_review'):raise HTTPException(409,'Документы сейчас не запрашиваются')
-    name=Path(file.filename or '').name
-    if Path(name).suffix.lower() not in ('.pdf','.png','.jpg','.jpeg'):raise HTTPException(422,'Поддерживаются PDF, PNG и JPEG')
-    content=await file.read(10*1024*1024+1)
-    if len(content)>10*1024*1024:raise HTTPException(413,'Файл должен быть меньше 10 МБ')
-    media='application/pdf' if content.startswith(b'%PDF-') else 'image/png' if content.startswith(b'\x89PNG\r\n\x1a\n') else 'image/jpeg' if content.startswith(b'\xff\xd8\xff') else None
-    if not media:raise HTTPException(422,'Содержимое файла не соответствует PDF или изображению')
-    d=Document(id=uid(),application_id=a.id,name=name[:200],media_type=media,size=len(content));db.add(d)
-    storage().put(d.id,content,media);a.revision+=1;a.events=[*a.events,{'at':now(),'status':a.status,'message':f'Документ загружен: {d.name}. Ожидает проверки.'}]
-    db.flush();return application_json(a,db)
-
-@app.get('/api/documents/{id}')
-def download(id:str,user=Depends(current_user),db=Depends(db_session)):
-    d=db.get(Document,id)
-    if not d:raise HTTPException(404)
-    own(db,Application,d.application_id,user)
-    try:content=storage().get(d.id)
-    except FileNotFoundError:raise HTTPException(404,'Файл отсутствует в хранилище')
-    return Response(content,media_type=d.media_type,headers={'Content-Disposition':f'attachment; filename="document{Path(d.name).suffix}"'})
-
-@app.get('/api/staff/reviews')
-def reviews(user=Depends(staff),db=Depends(db_session)):
-    rows=db.scalars(select(Application).where(Application.status.in_(['manual_review','needs_data'])).order_by(Application.created)).all()
-    return [application_json(a,db) for a in rows]
-
-class Review(Input):
-    action:str
-    comment:str=Field(min_length=10,max_length=2000)
-    revision:int
-    verified_revenue:float|None=Field(default=None,gt=0,le=1e10)
-    verified_trend:str|None=None
-    offer_index:int=0
-
-@app.post('/api/staff/reviews/{id}')
-def review(id:str,body:Review,user=Depends(staff),db=Depends(db_session)):
-    a=own(db,Application,id,user)
-    if a.revision!=body.revision or a.status not in ('needs_data','manual_review'):raise HTTPException(409,'Состояние заявки изменилось')
-    if body.action=='documents':
-        docs=db.scalars(select(Document).where(Document.application_id==id)).all()
-        if not docs:raise HTTPException(422,'Сначала загрузите подтверждающий документ')
-        revised=dict(a.answers)
-        if body.verified_revenue is not None:
-            revised['revenue']=body.verified_revenue
-            revised.pop('monthly',None)
-        if body.verified_trend is not None:
-            if body.verified_trend not in ('growing','stable','falling'):raise HTTPException(422,'Неверная динамика выручки')
-            revised['trend']=body.verified_trend
-        a.answers=revised;a.documents_reviewed=1
-        for d in docs:d.status='verified'
-        a.revision+=1
-        result=evaluate(revised,documents_reviewed=True,policy=a.policy_snapshot)
-    elif body.action=='approve':
-        result=evaluate(a.answers,documents_reviewed=bool(a.documents_reviewed),manual=True,policy=a.policy_snapshot)
-        if result['status'] not in ('approved','counteroffer'):raise HTTPException(422,'Заявка не проходит обязательные ограничения. Одобрение недоступно.')
-        a.revision+=1
-    elif body.action=='decline':
-        a.revision+=1
-        result={'status':'declined','rule_version':a.policy_snapshot['version'],'policy_snapshot':a.policy_snapshot,'offers':[],'checks':[],'factors':[],'score':None,'risk':None,'reason_codes':['manual_decline'],'reasons':['По результатам индивидуального рассмотрения финансирование сейчас недоступно.'],'documents':[]}
-    else:raise HTTPException(422,'Неизвестное действие')
-    a.events=[*a.events,{'at':now(),'status':'review','message':body.comment,'actor':user.id}]
-    save_decision(a,result);return application_json(a,db)
-
-# --- v2 applications (T19): statuses SPEC §13, audit log; staff actions (T20) below ---
 class V2Submission(Input):idempotency_key:str=Field(min_length=8,max_length=200);request:dict[str,Any]
 class V2Revision(Input):revision:int
 class V2Accept(V2Revision):offer_id:str=Field(min_length=1,max_length=200)
@@ -541,7 +357,7 @@ def sign_v2(id:str,body:V2Sign,user=Depends(staff),db=Depends(db_session)):
     a=staff_v2(db,id,body.revision)
     return staff_action(a,db,lambda:staff_actions.sign(db,a,staff_actions.staff_of(user),approve=body.approve,comment=body.comment,reason_code=body.reason_code))
 
-class Message(Input):message:str=Field(min_length=1,max_length=1000);question_id:str|None=None;application_id:str|None=None
+class Message(Input):message:str=Field(min_length=1,max_length=1000);application_id:str|None=None
 # --- v2 overdraft pre-approval (T22): the nightly batch's "Вам доступно до X" ---
 @app.get('/api/v2/preapproval')
 def preapproval_v2(inn:str=Query(pattern=r'^\d{10}(\d{2})?$'),user=Depends(current_user)):
@@ -561,17 +377,26 @@ def preapproval_run_v2(user=Depends(staff)):
 
 @app.post('/api/assistant/messages')
 def assistant(body:Message,user=Depends(current_user),db=Depends(db_session)):
-    # Complete offline fallback: no model key and no fabricated credit decision.
-    text='Помогу разобраться с анкетой. Выручка — все продажи до расходов. Остаток долга и ежемесячный платёж указываются отдельно. Все предложения здесь рассчитываются по демонстрационным правилам.'
-    if body.application_id:
-        a=own(db,Application,body.application_id,user)
-        if a.decisions:text=' '.join(a.decisions[-1]['reasons'])+' Решение рассчитано сервером по версии '+RULES['version']+'.'
-    elif body.question_id:
-        q=next((q for q in QUESTIONS if q['id']==body.question_id),None)
-        if q:text=q['hint'] or f'Вопрос «{q["title"]}» помогает уточнить профиль бизнеса. Укажите фактические данные; вернуться и исправить ответ можно до подачи.'
+    text='Помогу разобраться с финансированием. Укажите цель, сумму и срок заявки. Условия рассчитываются по подтверждённым данным компании.'
     lower=body.message.lower()
-    if 'ставк' in lower:text='Условные годовые ставки демо: оборотный кредит — 24%, оборудование — 21%, линия — 25%. Это параметры учебной модели, не банковское предложение.'
-    elif 'линия' in lower or 'линию' in lower:text='Кредитная линия — лимит для использования частями. В демо платёж проверяется при полной выборке: равномерное погашение долга плюс проценты на остаток. Ожидаемое использование показывается отдельно.'
+    if 'ставк' in lower:
+        text='Ставка рассчитывается индивидуально: учитываются риск, обеспечение, сумма, срок и расходы на обработку. Точные условия появятся в предложениях по заявке.'
+    elif 'линия' in lower or 'линию' in lower:
+        text='Кредитная линия — лимит для использования частями. Условия и срок показываются в предложении по заявке.'
+    if body.application_id:
+        application=own_v2(db,body.application_id,user)
+        text='Статус заявки: '+workflow.STATUS_TEXT[workflow.S(application.status)]+'.'
+        if application.decision:
+            decision=workflow.client_decision(application.decision)
+            parts=[text,*decision['route_messages'],*decision['reasons']]
+            for offer in decision['offers']:
+                parts.append(f"Предложение: {offer['amount']} ₽ на {offer['term_months']} мес., ставка {offer['rate']*100:.2f}% годовых; действительно до {offer['valid_until']}.")
+            parts.extend(c['client_text'] for c in decision['counterfactuals'])
+            if decision['requested_documents']:
+                parts.append('Нужны документы: '+', '.join(decision['requested_documents']))
+            if decision['reapply_after']:
+                parts.append('Повторная заявка возможна с '+decision['reapply_after'])
+            text=' '.join(parts)
     generated=explain(body.message,text)
     return {'message':generated or text,'mode':'model' if generated else 'template','label':'ИИ-помощник' if generated else 'Помощник · справочный режим'}
 

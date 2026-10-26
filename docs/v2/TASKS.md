@@ -150,3 +150,9 @@ Sizes: S ≤ 1 day, M 2–3 days, L 4–5 days.
 4. ФССП and арбитраж sources in T06 (keep ЕГРЮЛ, ФНС, БКИ, accounts, 115-ФЗ)
 5. T23 statement upload (`THIN` clients go straight to the underwriter)
 6. T10, T11, T32 trained model (keep hand-set weights, describe training in the docs)
+
+### Maintenance
+
+| ID | Task | Size | Depends on | Status | Owner / PR |
+|---|---|---|---|---|---|
+| T38 | Remove unused v1 runtime, routes, storage dependencies and build artifacts; use v2 assistant context; preserve historical database migrations and data | M | T35 | done | Local cleanup; 474 tests, TypeScript and production build passed |

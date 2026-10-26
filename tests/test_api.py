@@ -16,7 +16,6 @@ import pytest
 from fastapi.testclient import TestClient
 from apps.api.main import app
 from apps.api.db import Session, User
-from apps.api.worker import run_once
 from apps.world.generator import generate_world
 from apps.api.demo_companies import company_options
 
@@ -25,47 +24,7 @@ def client():
     with TestClient(app) as c:
         assert c.post('/api/auth/demo',json={'name':'Тест'}).status_code==200
         yield c
-        while run_once():pass
 
-def filled(c,persona='healthy'):
-    s=c.post('/api/surveys').json()
-    r=c.post(f'/api/surveys/{s["id"]}/persona/{persona}')
-    assert r.status_code==200,r.text
-    return r.json()
-
-def submitted(c,persona='healthy'):
-    s=filled(c,persona)
-    payload={'survey_id':s['id'],'version':s['version'],'confirmed':True,'idempotency_key':'test-'+s['id']}
-    r=c.post('/api/applications',json=payload);assert r.status_code==200,r.text
-    return r.json(),payload
-
-def test_full_happy_path_and_replay(client):
-    a,payload=submitted(client)
-    same=client.post('/api/applications',json=payload).json();assert same['id']==a['id']
-    assert run_once()
-    a=client.get('/api/applications/'+a['id']).json();assert a['status']=='approved'
-    a=client.post(f'/api/applications/{a["id"]}/actions',json={'action':'accept','offer_index':0,'revision':a['revision']}).json();assert a['status']=='signing'
-    a=client.post(f'/api/applications/{a["id"]}/actions',json={'action':'sign','revision':a['revision']}).json();assert a['status']=='issued'
-    assert client.post(f'/api/applications/{a["id"]}/actions',json={'action':'sign','revision':a['revision']}).status_code==409
-    assert len(a['decisions'])==1
-    assert a['decision']['input']['name']=='Кофейня «Зёрна»'
-    assert a['decision']['policy_snapshot']['version']==a['decision']['rule_version']
-
-def test_application_ownership(client):
-    a,_=submitted(client)
-    with TestClient(app) as other:
-        other.post('/api/auth/demo',json={'name':'Другой'})
-        assert other.get('/api/applications/'+a['id']).status_code==404
-        assert other.get('/api/applications').json()==[]
-
-def test_demo_profile_is_stable_and_keeps_application_history(client):
-    assert client.post('/api/auth/demo',json={'name':'Стабильный профиль'}).status_code==200
-    application,_=submitted(client)
-    first=client.get('/api/auth/me').json()
-    assert client.post('/api/auth/logout').status_code==200
-    second=client.post('/api/auth/demo',json={'name':'  Стабильный профиль  '}).json()
-    assert second['id']==first['id']
-    assert [item['id'] for item in client.get('/api/applications').json()]==[application['id']]
 
 def test_demo_company_catalog_is_available_and_restricts_unknown_inn(client):
     options=client.get('/api/v2/demo/companies').json()
@@ -85,43 +44,9 @@ def test_demo_company_catalog_falls_back_to_current_world(tmp_path):
     personas.write_text('{broken',encoding='utf-8')
     assert company_options(world,personas)[0]['inn']==world.companies[0].inn
 
-def test_optimistic_survey_and_hidden_answers(client):
-    s=filled(client,'equipment')
-    r=client.patch(f'/api/surveys/{s["id"]}/answers',json={'version':s['version'],'question_id':'purpose','value':'working'})
-    assert r.status_code==200;r=r.json()
-    assert 'equipment_cost' not in r['answers'];assert 'collateral' not in r['answers']
-    assert client.patch(f'/api/surveys/{s["id"]}/answers',json={'version':s['version'],'question_id':'purpose','value':'line'}).status_code==409
-    assert client.patch(f'/api/surveys/{s["id"]}/answers',json={'version':r['version'],'question_id':'collateral','value':'yes'}).status_code==422
-
-def test_incomplete_and_unconfirmed_submission(client):
-    s=client.post('/api/surveys').json()
-    assert client.post(f'/api/surveys/{s["id"]}/recommendations',json={'version':s['version']}).status_code==422
-    assert client.post('/api/applications',json={'survey_id':s['id'],'version':s['version'],'confirmed':False,'idempotency_key':'confirm-test-000'}).status_code==422
-
-def test_staff_confirmation_and_rescore(client):
-    a,_=submitted(client,'documents');run_once()
-    a=client.get('/api/applications/'+a['id']).json();assert a['status']=='needs_data'
-    before=a['decision']['score']
-    r=client.post(f'/api/applications/{a["id"]}/documents',files={'file':('report.pdf',b'%PDF-1.4\n synthetic report','application/pdf')})
-    assert r.status_code==200,r.text;a=r.json()
-    assert a['decision']['score']==before
-    doc=a['documents'][0]
-    assert client.get('/api/documents/'+doc['id']).status_code==200
-    with TestClient(app) as employee:
-        assert employee.post('/api/auth/staff',json={'password':'test-staff-password-only'}).status_code==200
-        payload={'action':'documents','revision':a['revision'],'verified_revenue':36000000,'verified_trend':'stable','comment':'Выручка подтверждена выпиской за 12 месяцев.'}
-        r=employee.post('/api/staff/reviews/'+a['id'],json=payload)
-        assert r.status_code==200,r.text;a=r.json()
-        assert a['status']=='approved';assert len(a['decisions'])==2
-        assert a['decisions'][0]['input']['revenue']==12000000
-        assert a['decisions'][1]['input']['revenue']==36000000
-        assert a['documents'][0]['status']=='verified'
-    with TestClient(app) as other:
-        other.post('/api/auth/demo',json={'name':'Посторонний'})
-        assert other.get('/api/documents/'+doc['id']).status_code==404
 
 def test_staff_role_and_comment_required(client):
-    assert client.get('/api/staff/reviews').status_code==403
+    assert client.get('/api/v2/staff/overrides').status_code==403
     assert client.post('/api/auth/staff',json={'password':'wrong'}).status_code==403
 
 def test_model_validation_is_available_only_to_risk_managers(client):
@@ -138,12 +63,9 @@ def test_model_validation_is_available_only_to_risk_managers(client):
         assert report['limitations']
         assert any(grade['predicted_vs_actual']=='below' for grade in report['calibration']['grades'])
 
-def test_invalid_file_not_accepted(client):
-    a,_=submitted(client,'manual');run_once()
-    assert client.post(f'/api/applications/{a["id"]}/documents',files={'file':('report.pdf',b'<script>alert(1)</script>','application/pdf')}).status_code==422
 
 def test_origin_guard(client):
-    assert client.post('/api/surveys',headers={'Origin':'https://evil.invalid'}).status_code==403
+    assert client.post('/api/auth/demo',json={},headers={'Origin':'https://evil.invalid'}).status_code==403
 
 def signed_telegram(fields):
     check='\n'.join(f'{k}={v}' for k,v in sorted(fields.items()))
@@ -159,55 +81,8 @@ def test_telegram_signature_and_freshness(client):
 
 def test_assistant_fallback_is_usable_without_model(client):
     r=client.post('/api/assistant/messages',json={'message':'Какие ставки?'}).json()
-    assert r['mode']=='template';assert '24%' in r['message']
+    assert r['mode']=='template';assert 'индивидуально' in r['message'];assert '24%' not in r['message']
 
-def test_idempotency_key_stays_bound_after_survey_changes(client):
-    a,payload=submitted(client)
-    s=client.get('/api/surveys/current').json()
-    client.patch(f'/api/surveys/{s["id"]}/answers',json={'version':s['version'],'question_id':'amount','value':2000000})
-    replay=client.post('/api/applications',json=payload)
-    assert replay.status_code==200;assert replay.json()['id']==a['id']
-
-def test_job_uses_policy_saved_at_submission(client,monkeypatch):
-    a,_=submitted(client)
-    from apps.api.catalog import RULES
-    monkeypatch.setitem(RULES,'version','new-live-version')
-    run_once()
-    decision=client.get('/api/applications/'+a['id']).json()['decision']
-    assert decision['rule_version']=='demo-2026-10-v1'
-
-def test_stale_offer_action_cannot_be_replayed(client):
-    a,_=submitted(client);run_once();a=client.get('/api/applications/'+a['id']).json()
-    payload={'action':'accept','offer_index':0,'revision':a['revision']}
-    assert client.post(f'/api/applications/{a["id"]}/actions',json=payload).status_code==200
-    assert client.post(f'/api/applications/{a["id"]}/actions',json=payload).status_code==409
-
-def test_empty_document_confirmation_and_staff_override_blocked(client):
-    a,_=submitted(client,'manual');run_once();a=client.get('/api/applications/'+a['id']).json()
-    client.post('/api/auth/staff',json={'password':'test-staff-password-only'})
-    for action in ('documents','approve'):
-        r=client.post('/api/staff/reviews/'+a['id'],json={'action':action,'revision':a['revision'],'comment':'Проверка документов и условий.'})
-        assert r.status_code==422
-
-def test_expired_offer_is_not_accepted(client):
-    a,_=submitted(client);run_once();a=client.get('/api/applications/'+a['id']).json()
-    from apps.api.db import Session,Application
-    with Session.begin() as db:db.get(Application,a['id']).offer_expires=time.time()-1
-    assert client.post(f'/api/applications/{a["id"]}/actions',json={'action':'accept','revision':a['revision']}).status_code==409
-
-def test_registration_date_is_validated_and_age_is_derived(client):
-    s=filled(client)
-    r=client.patch(f'/api/surveys/{s["id"]}/answers',json={'version':s['version'],'question_id':'registered_at','value':'2099-01-01'})
-    assert r.status_code==422
-    a,_=submitted(client);run_once()
-    a=client.get('/api/applications/'+a['id']).json()
-    assert a['answers']['age']==36
-    assert a['answers']['ogrn']=='1000000000000'
-
-def test_form_change_invalidates_both_requisites(client):
-    s=filled(client)
-    r=client.patch(f'/api/surveys/{s["id"]}/answers',json={'version':s['version'],'question_id':'form','value':'ip'}).json()
-    assert 'inn' not in r['answers'];assert 'ogrn' not in r['answers']
 
 def test_v2_company_lookup_returns_registry_card_and_consent_subjects(client,monkeypatch):
     import json
@@ -271,3 +146,55 @@ def test_default_pipeline_uses_world_meta_as_of(monkeypatch):
         assert workflow.default_pipeline().as_of==expected
     finally:
         workflow.default_pipeline.cache_clear()
+
+
+def stored_v2_application(client, decision_file='decision_offered.json'):
+    from pathlib import Path
+    from apps.api.db import LoanApplication, uid
+    user_id=client.get('/api/auth/me').json()['id']
+    application_id=uid()
+    decision=json.loads((Path('tests/fixtures')/decision_file).read_text(encoding='utf-8')) if decision_file else None
+    request=json.loads(Path('tests/fixtures/application_request.json').read_text(encoding='utf-8'))
+    with Session.begin() as db:
+        db.add(LoanApplication(id=application_id,user_id=user_id,idempotency_key=uid(),
+                               status=decision['status'] if decision else 'submitted',request=request,decision=decision))
+    return application_id,decision
+
+
+def test_demo_profile_keeps_v2_application_history(client):
+    client.post('/api/auth/demo',json={'name':'Stable v2 profile'})
+    application_id,_=stored_v2_application(client)
+    user=client.get('/api/auth/me').json()
+    client.post('/api/auth/logout')
+    assert client.post('/api/auth/demo',json={'name':'  Stable v2 profile  '}).json()['id']==user['id']
+    assert application_id in [a['id'] for a in client.get('/api/v2/applications').json()]
+
+
+@pytest.mark.parametrize('decision_file',['decision_offered.json','decision_declined.json','decision_in_review.json',None])
+def test_assistant_explains_v2_without_staff_details(client,monkeypatch,decision_file):
+    from apps.api import main
+    captured=[]
+    monkeypatch.setattr(main,'explain',lambda message,reference:captured.append(reference))
+    application_id,decision=stored_v2_application(client,decision_file)
+    response=client.post('/api/assistant/messages',json={'message':'Какая ставка?', 'application_id':application_id})
+    assert response.status_code==200,response.text
+    text=response.json()['message']
+    assert captured==[text]
+    assert 'Статус заявки:' in text
+    if decision:
+        for reason in decision['reasons']+decision['stop_factors']:
+            assert reason['client_text'] in text
+            if reason['staff_text'] != reason['client_text']:
+                assert reason['staff_text'] not in text
+        for offer in decision['offers']:
+            assert str(offer['amount']) in text
+            assert f"{offer['rate']*100:.2f}%" in text
+        assert 'challenger' not in text and 'expected_profit' not in text
+    with TestClient(app) as other:
+        other.post('/api/auth/demo',json={'name':'Other assistant user'})
+        assert other.post('/api/assistant/messages',json={'message':'Условия?', 'application_id':application_id}).status_code==404
+
+
+@pytest.mark.parametrize('path',['/api/catalog','/api/personas','/api/surveys/current','/api/applications','/api/staff/reviews'])
+def test_retired_routes_are_not_exposed(client,path):
+    assert client.get(path).status_code==404

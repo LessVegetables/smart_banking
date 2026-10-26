@@ -11,3 +11,7 @@ __pycache__/
 .env.vps
 .docker-cli/
 .DS_Store
+
+dist/
+releases/*.zip
+releases/*.zip.sha256

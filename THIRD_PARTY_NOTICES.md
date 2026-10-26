@@ -12,8 +12,6 @@
 | [annotated-doc](https://github.com/fastapi/annotated-doc) | 0.0.5 | MIT |
 | [annotated-types](https://github.com/annotated-types/annotated-types) | 0.8.0 | MIT |
 | [anyio](https://github.com/agronholm/anyio) | 4.15.1 | MIT |
-| [boto3](https://github.com/boto/boto3) | 1.43.117 | Apache-2.0 |
-| [botocore](https://github.com/boto/botocore) | 1.43.117 | Apache-2.0 |
 | [certifi](https://github.com/certifi/python-certifi) | 2026.10.19 | MPL-2.0 |
 | [click](https://github.com/pallets/click) | 8.5.0 | BSD-3-Clause |
 | [colorama](https://github.com/tartley/colorama) | 0.4.6 | BSD-3-Clause |
@@ -23,7 +21,6 @@
 | [httpx](https://github.com/encode/httpx) | 0.28.1 | BSD-3-Clause |
 | [idna](https://github.com/kjd/idna) | 3.20 | BSD-3-Clause |
 | [iniconfig](https://github.com/pytest-dev/iniconfig) | 2.3.1 | MIT |
-| [jmespath](https://github.com/jmespath/jmespath.py) | 1.1.0 | MIT |
 | [Mako](https://github.com/sqlalchemy/mako) | 1.4.3 | MIT |
 | [MarkupSafe](https://github.com/pallets/markupsafe) | 3.0.3 | BSD-3-Clause |
 | [opentelemetry-api](https://github.com/open-telemetry/opentelemetry-python) | 1.45.1 | Apache-2.0 |
@@ -35,16 +32,12 @@
 | [pydantic_core](https://github.com/pydantic/pydantic-core) | 2.50.1 | MIT |
 | [Pygments](https://github.com/pygments/pygments) | 2.21.0 | BSD-2-Clause |
 | [pytest](https://github.com/pytest-dev/pytest) | 9.1.1 | MIT |
-| [python-dateutil](https://github.com/dateutil/dateutil) | 2.9.0.post0 | Apache-2.0 AND BSD-3-Clause |
 | [python-multipart](https://github.com/Kludex/python-multipart) | 0.0.32 | Apache-2.0 |
-| [s3transfer](https://github.com/boto/s3transfer) | 0.19.3 | Apache-2.0 |
-| [six](https://github.com/benjaminp/six) | 1.17.0 | MIT |
 | [SQLAlchemy](https://github.com/sqlalchemy/sqlalchemy) | 2.1.6 | MIT |
 | [starlette](https://github.com/Kludex/starlette) | 1.9.0 | BSD-3-Clause |
 | [typing-inspection](https://github.com/pydantic/typing-inspection) | 0.4.4 | MIT |
 | [typing_extensions](https://github.com/python/typing_extensions) | 4.16.0 | PSF-2.0 |
 | [tzdata](https://github.com/python/tzdata) | 2026.5 | Apache-2.0 |
-| [urllib3](https://github.com/urllib3/urllib3) | 2.8.0 | MIT |
 | [uvicorn](https://github.com/Kludex/uvicorn) | 0.54.0 | BSD-3-Clause |
 
 ## JavaScript в собранном клиенте (`dist/`)

@@ -16,9 +16,9 @@ function decisionHeading(app:V2Application){if(app.status==='offered')return 'П
 function date(value:string){return new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(`${value}T00:00:00Z`));}
 
 export default function ApplicationAnalysis({applicationId,onContinue}:{applicationId:string;onContinue:()=>void}){
- const [app,setApp]=useState<V2Application|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[demoCode,setDemoCode]=useState(''),[signCode,setSignCode]=useState(''),[documents,setDocuments]=useState<V2ClosingDocument[]>([]);
+ const [app,setApp]=useState<V2Application|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[demoCode,setDemoCode]=useState(''),[signCode,setSignCode]=useState(''),[documents,setDocuments]=useState<V2ClosingDocument[]>([]);
  const sources=useMemo(()=>latestBySource(app?.sources??[]),[app?.sources]);
- useEffect(()=>{let active=true;const load=async()=>{try{const next=await api<V2Application>(`/v2/applications/${applicationId}`);if(active){setApp(next);setError('');}}catch(e){if(active)setError((e as Error).message);}finally{if(active)setLoading(false);}};void load();const timer=window.setInterval(()=>{if(!app||inProgress.has(app.status))void load();},1200);return()=>{active=false;window.clearInterval(timer);};},[applicationId,app?.status]);
+ useEffect(()=>{let active=true;const load=async()=>{try{const next=await api<V2Application>(`/v2/applications/${applicationId}`);if(active){setApp(next);setError('');}}catch(e){if(active)setError((e as Error).message);}};void load();const timer=window.setInterval(()=>{if(!app||inProgress.has(app.status))void load();},1200);return()=>{active=false;window.clearInterval(timer);};},[applicationId,app?.status]);
  useEffect(()=>{let active=true;const docs=app?.status==='documents'?app.closing?.documents??[]:[];if(!docs.length){setDocuments([]);return()=>{active=false;};}void Promise.all(docs.map(doc=>api<V2ClosingDocument>(`/v2/applications/${applicationId}/documents/${doc.doc_id}`).catch(()=>doc))).then(result=>{if(active)setDocuments(result);});return()=>{active=false;};},[applicationId,app?.status,app?.revision]);
  const running=!app||['submitted','enriching','scoring'].includes(app.status);const currentStep=app?.status==='scoring'?1:0;const decision=app?.decision;
  async function accept(offerId:string){if(!app)return;setBusy(true);setError('');try{const next=await api<V2Application>(`/v2/applications/${app.id}/accept`,'POST',{offer_id:offerId,revision:app.revision});setApp(next);}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
@@ -50,7 +50,7 @@ export default function ApplicationAnalysis({applicationId,onContinue}:{applicat
     {app?.status==='accepted'&&<div className="analysis-insights"><b>Готовим документы</b><p>Договоры появятся здесь, когда оформление будет готово.</p></div>}
    </section>
   </>}
-  {error&&<div className="card analysis-error" role="alert"><p>{error}</p><button className="button secondary" onClick={()=>{setLoading(true);setError('');void api<V2Application>(`/v2/applications/${applicationId}`).then(setApp).catch(e=>setError((e as Error).message)).finally(()=>setLoading(false));}}><RefreshCw size={15}/>Повторить</button></div>}
+  {error&&<div className="card analysis-error" role="alert"><p>{error}</p><button className="button secondary" onClick={()=>{setError('');void api<V2Application>(`/v2/applications/${applicationId}`).then(setApp).catch(e=>setError((e as Error).message));}}><RefreshCw size={15}/>Повторить</button></div>}
   <button className="analysis-back" onClick={onContinue}>Вернуться в кабинет</button>
  </div>;
 }
