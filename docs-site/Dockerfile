@@ -4,7 +4,9 @@ WORKDIR /src
 RUN pip install --no-cache-dir mkdocs-material==9.7.7
 
 COPY docs-site/mkdocs.yml ./mkdocs.yml
-COPY docs-site/index.md ./index.md
+
+# MkDocs refuses a docs_dir that contains mkdocs.yml, so the pages go into a child folder (docs_dir: content).
+WORKDIR /src/content
 COPY README.md ARCHITECTURE.md VPS.md AGENTS.md THIRD_PARTY_NOTICES.md ./
 COPY docs ./docs
 COPY deploy/Caddyfile ./deploy/
@@ -18,8 +20,10 @@ COPY apps/web/README.md ./apps/web/
 COPY apps/world/*.md ./apps/world/
 COPY config/*.json ./config/
 COPY misc/HACKATHON.md ./misc/
-COPY misc/Альфа_Хак_Умный_кредитный_кабинет.pdf ./misc/
+# Glob, not the full name: macOS stores "й" decomposed (NFD), and an exact COPY misses it there.
+COPY misc/Альфа_Хак_*.pdf ./misc/
 
+WORKDIR /src
 RUN mkdocs build --clean --site-dir /site
 
 FROM nginx:stable-alpine
