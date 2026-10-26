@@ -71,7 +71,7 @@ docker compose --env-file .env.vps -f compose.vps.yaml stop
 
 `compose.yaml` рассчитан на локальный запуск и задаёт `APP_ORIGIN=http://127.0.0.1:8000`. За nginx браузер присылает `Origin: https://etabank.ru`, и API отвечает 403 на любой изменяющий запрос. Поэтому стек запускается вместе с `deploy/nginx/compose.nginx.yaml`, который берёт `APP_ORIGIN` и `COOKIE_SECURE` из `.env`.
 
-1. DNS: записи A (и AAAA, если есть IPv6) для `etabank.ru` и `умныйкредитныйкабинет.рф` указывают на сервер.
+1. DNS: записи A (и AAAA, если есть IPv6) для `etabank.ru`, `docs.etabank.ru` и `умныйкредитныйкабинет.рф` указывают на сервер.
 2. `.env` в папке с кодом: `python3 scripts/init_env.py` создаёт его со случайными `STAFF_PASSWORD` и `POSTGRES_PASSWORD` (или `cp .env.example .env` и задайте их сами). Затем в `.env`:
 
    ```dotenv
@@ -84,6 +84,8 @@ docker compose --env-file .env.vps -f compose.vps.yaml stop
    ```bash
    docker compose -f compose.yaml -f deploy/nginx/compose.nginx.yaml up -d --build --wait
    ```
+
+   Эта Compose-конфигурация также собирает статический сайт документации из Markdown в `docs-site/` и публикует его только на `127.0.0.1:8081`. Для документации используется отдельный домен; `APP_ORIGIN` остаётся `https://etabank.ru`, поэтому проверка Origin и клиентские cookies демо не меняются.
 
 4. Сертификат Let's Encrypt (Ubuntu / Debian), до включения конфига — блок 443 без сертификата не пройдёт `nginx -t`:
 
@@ -106,7 +108,23 @@ docker compose --env-file .env.vps -f compose.vps.yaml stop
    sudo systemctl reload nginx
    ```
 
-После этого кабинет — https://etabank.ru/, рабочее место — https://etabank.ru/staff, mini app — https://etabank.ru/mini/. Конфиг проверен `nginx -t` на версиях 1.18, 1.24 и 1.27; на 1.25 и новее nginx предупреждает, что `listen … http2` устарел, — это не ошибка (можно заменить на `listen 443 ssl;` и `http2 on;`).
+6. Документация на отдельном домене:
+
+   ```bash
+   sudo install -d -m 755 /var/www/certbot
+   sudo cp deploy/nginx/docs.etabank.ru-bootstrap.conf /etc/nginx/sites-available/docs.etabank.ru
+   sudo ln -s /etc/nginx/sites-available/docs.etabank.ru /etc/nginx/sites-enabled/docs.etabank.ru
+   sudo nginx -t
+   sudo systemctl reload nginx
+   sudo certbot certonly --webroot -w /var/www/certbot -d docs.etabank.ru --deploy-hook "systemctl reload nginx"
+   sudo cp deploy/nginx/docs.etabank.ru.conf /etc/nginx/sites-available/docs.etabank.ru
+   sudo nginx -t
+   sudo systemctl reload nginx
+   ```
+
+   При повторном включении не создавайте ссылку повторно, если она уже есть. HTTP-конфигурация bootstrap нужна только для первичной выдачи сертификата. Финальная конфигурация оставляет путь ACME challenge открытым для автоматического продления. После установки статическая документация доступна по адресу https://docs.etabank.ru/; её контейнер обновляется вместе с API при деплое.
+
+После этого кабинет — https://etabank.ru/, рабочее место — https://etabank.ru/staff, mini app — https://etabank.ru/mini/, документация — https://docs.etabank.ru/. Конфиг проверен `nginx -t` на версиях 1.18, 1.24 и 1.27; на 1.25 и новее nginx предупреждает, что `listen … http2` устарел, — это не ошибка (можно заменить на `listen 443 ssl;` и `http2 on;`).
 
 Что делает конфиг: `умныйкредитныйкабинет.рф` (по HTTP и HTTPS) перенаправляет на `https://etabank.ru` с тем же путём и строкой запроса; если в ссылке нет `utm_source`, добавляется `utm_source=rf_domain`, чтобы в аналитике был виден этот домен (`/staff?utm_source=tg` → `https://etabank.ru/staff?utm_source=tg`, `/staff?utm_campaign=x` → `https://etabank.ru/staff?utm_campaign=x&utm_source=rf_domain`, `/` → `https://etabank.ru/?utm_source=rf_domain`). Метку меняет `map` в начале блока `.рф`; HTTP → HTTPS, TLS 1.2–1.3, HSTS, gzip, тело запроса до 12 МБ (загрузка выписок — до 5 файлов по 2 МБ), заголовки `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`. Заголовка `X-Frame-Options` нет намеренно: веб-версия Telegram открывает mini app во фрейме.
 

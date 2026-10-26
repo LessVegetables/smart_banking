@@ -92,6 +92,7 @@ Worker (`worker.py`, раз в 0,5 с) вызывает `workflow.tick()` и з�
 | `POST /api/v2/applications/{id}/review`, `.../review/sign` | сотрудник | Действие с кодом причины и комментарием; вторая подпись комитета (T20, `STAFF_ACTIONS.md`) |
 | `GET /api/v2/staff/reason-codes`, `GET /api/v2/staff/overrides` | сотрудник | Коды причин; как часто сотрудники не соглашаются с системой |
 | `GET /api/v2/preapproval?inn=…`, `POST /api/v2/staff/preapproval/run` | клиент, сотрудник | Предодобренный овердрафт для баннера; запуск расчёта (T22, `PREAPPROVAL.md`) |
+| `POST /api/assistant/messages` | клиент | `{ "message", "application_id"? }`: если передан ID открытой v2-заявки, API проверяет владельца и передаёт помощнику только клиентское представление этой заявки; без ID — общий справочный контекст. Никаких действий над заявкой (T37). |
 
 `revision` — версия строки заявки. Если она устарела, ответ 409: заявка изменилась.
 

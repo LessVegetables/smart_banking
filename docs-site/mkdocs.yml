@@ -1,0 +1,65 @@
+site_name: Альфа · Бизнес — документация
+site_description: Полная документация кредитного конвейера для малого и микробизнеса
+site_url: https://docs.etabank.ru/
+docs_dir: .
+site_dir: /site
+
+theme:
+  name: material
+  language: ru
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - content.code.copy
+  palette:
+    - scheme: default
+      primary: red
+      accent: red
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Главная: index.md
+  - Руководство и запуск: README.md
+  - Архитектура: ARCHITECTURE.md
+  - Аналитика:
+      - Полная карта документов: docs/README.md
+      - Процесс: docs/PROCESS.md
+      - Модель данных: docs/DATA_MODEL.md
+      - SLA: docs/SLA.md
+      - Упрощения и моки: docs/SIMPLIFICATIONS.md
+  - Кредитная логика v2:
+      - Спецификация: docs/v2/SPEC.md
+      - Контракты: docs/v2/CONTRACTS.md
+      - Задачи: docs/v2/TASKS.md
+      - Передачи и ограничения: docs/v2/NOTES.md
+  - API и компоненты:
+      - OpenAPI: docs/api/openapi.json
+      - Синтетический мир: apps/world/README.md
+      - Демо-персоны: apps/world/PERSONAS.md
+      - Источники данных: apps/sources/README.md
+      - Признаки: apps/api/features/README.md
+      - Скоринг: apps/api/SCORING.md
+      - Лимит и ставка: apps/api/LIMITS.md
+      - Предложения: apps/api/OFFERS.md
+      - Маршрутизация: apps/api/ROUTING.md
+      - Действия сотрудников: apps/api/STAFF_ACTIONS.md
+      - Жизненный цикл заявки: apps/api/WORKFLOW.md
+      - Выписки: apps/api/STATEMENTS.md
+      - Подписание и выдача: apps/api/DISBURSEMENT.md
+      - Предодобрение: apps/api/PREAPPROVAL.md
+      - Веб-интерфейс: apps/web/README.md
+      - Mini app: apps/mini/README.md
+      - Обучение и валидация скоринга: apps/ml/README.md
+  - Развёртывание: VPS.md
+  - Условия хакатона: misc/HACKATHON.md

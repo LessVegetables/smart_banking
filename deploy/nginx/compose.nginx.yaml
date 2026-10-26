@@ -4,6 +4,19 @@
 # Origin: https://<domain>, and the API refuses changing requests from any other origin (403).
 # Set APP_ORIGIN=https://etabank.ru and COOKIE_SECURE=true in .env.
 services:
+  docs:
+    build:
+      context: .
+      dockerfile: docs-site/Dockerfile
+    image: alfa-hack-docs:local
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:8081:80'
+    healthcheck:
+      test: [CMD, wget, -q, --spider, http://127.0.0.1/]
+      interval: 10s
+      timeout: 3s
+      retries: 3
   api:
     environment:
       APP_ORIGIN: ${APP_ORIGIN:?Set APP_ORIGIN in .env to the public https address}
