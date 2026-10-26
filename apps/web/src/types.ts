@@ -1,4 +1,3 @@
-export interface Product {id:string;name:string;short:string;min:number;max:number;min_term:number;max_term:number;annual_rate:number}
 export interface User {id:string;name:string;role:string;staff_position?:'underwriter'|'risk_manager'|null}
 export interface CompanyCard {inn:string;ogrn:string;legal_form:'ip'|'ooo';name:string;status:'active'|'liquidating'|'reorganizing'|'liquidated';registered_at:string;okved_main:string;region:string;address:string;owner_name:string;owner_inn:string}
 export interface DemoCompanyOption {persona_id:string;title:string;story:string;inn:string;legal_form:'ip'|'ooo';company_name:string}
