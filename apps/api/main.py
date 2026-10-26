@@ -24,7 +24,7 @@ from .worker import loop
 from .credit_policy import default_policy
 from .assistant import explain
 from .contracts import CollateralType, EgrulPayload, ProductId, SourceId
-from . import organis, disbursement, preapproval, staff_actions, statements, workflow
+from . import organizers, disbursement, preapproval, staff_actions, statements, workflow
 from apps.sources import SourceNotFound, SourceTimeout, SourceUnavailable
 from apps.ml.validation import ValidationReport
 
@@ -90,19 +90,26 @@ class DemoLogin(Input):name:str=Field(default='Алексей',min_length=1,max_
 class TelegramLogin(Input):init_data:str=Field(max_length=10000)
 class StaffLogin(Input):password:str=Field(max_length=200);position:staff_actions.Position=staff_actions.Position.UNDERWRITER
 
-def organiser(user=Depends(staff)):
+def organizer(user=Depends(staff)):
     if not DEMO:raise HTTPException(404)
     return user
 
 
-@app.get('/api/organis/sources')
-def organiser_sources(user=Depends(organiser),db=Depends(db_session)):
-    return organis.read(db)
+@app.get('/api/organizers/sources')
+def organizer_sources(user=Depends(organizer),db=Depends(db_session)):
+    return organizers.read(db)
 
 
-@app.put('/api/organis/sources')
-def update_organiser_sources(body:organis.Configuration,user=Depends(organiser),db=Depends(db_session)):
-    return organis.save(db,body,user.id)
+@app.put('/api/organizers/sources')
+def update_organizer_sources(body:organizers.Configuration,user=Depends(organizer),db=Depends(db_session)):
+    return organizers.save(db,body,user.id)
+
+
+@app.get('/api/organizers/random-company')
+def organizer_random_company(user=Depends(organizer)):
+    from .demo_companies import company_options
+    world=workflow.default_pipeline().client.world
+    return organizers.random_company(world,{option['inn']:option['title'] for option in company_options(world)})
 
 
 @app.get('/api/health')

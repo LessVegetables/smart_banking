@@ -5,10 +5,10 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/api/organis/sources": {
+    "/api/organizers/sources": {
       "get": {
-        "summary": "Organiser Sources",
-        "operationId": "organiser_sources_api_organis_sources_get",
+        "summary": "Organizer Sources",
+        "operationId": "organizer_sources_api_organizers_sources_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -21,8 +21,8 @@
         }
       },
       "put": {
-        "summary": "Update Organiser Sources",
-        "operationId": "update_organiser_sources_api_organis_sources_put",
+        "summary": "Update Organizer Sources",
+        "operationId": "update_organizer_sources_api_organizers_sources_put",
         "requestBody": {
           "content": {
             "application/json": {
@@ -49,6 +49,22 @@
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/organizers/random-company": {
+      "get": {
+        "summary": "Organizer Random Company",
+        "operationId": "organizer_random_company_api_organizers_random_company_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           }

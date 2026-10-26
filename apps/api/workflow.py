@@ -326,7 +326,7 @@ class Pipeline:
 
 @lru_cache(maxsize=1)
 def default_pipeline() -> Pipeline:
-    from .organis import source_overrides
+    from .organizers import source_overrides
     service = service_from_env()
     service.overrides = source_overrides
     # MOCK: the synthetic world is a snapshot frozen at its own `as_of` (WORLD_AS_OF), so the features are
