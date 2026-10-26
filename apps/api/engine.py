@@ -35,7 +35,7 @@ def score(a,policy=None):
     add('request','Запрос к годовой выручке',bucket(a['amount']/revenue,policy['request_weights']))
     add('trend','Динамика выручки',policy['trend_weights'][a['trend']])
     if a.get('has_debt')!='yes' and a.get('credit_history')=='no': add('history','Нет кредитной истории',policy['no_history_weight'])
-    if a.get('alfa')=='yes': add('alfa','Обороты по счёту в Альфе',policy['alfa_bonus'])
+    if a.get('alfa')=='yes': add('alfa','Обороты по счёту в Эта Банке',policy['alfa_bonus'])
     significant=significant_overdue(a,policy)
     if significant and a.get('overdue_months',0)<=policy['overdue_window_months']:
         weight=bucket(a.get('overdue_days',0),policy['overdue_weights'])

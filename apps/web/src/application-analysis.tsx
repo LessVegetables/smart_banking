@@ -3,7 +3,7 @@ import {ArrowRight,CheckCircle2,Clock,FileText,LoaderCircle,RefreshCw,ShieldChec
 import {api,money,type V2Application,type V2Offer,type V2SourceProgress,type V2ClosingDocument} from './types';
 import './application-analysis.css';
 
-const sourceNames:Record<string,string>={accounts:'Счета Альфа-Банка',client_card:'Карточка клиента',egrul:'ЕГРЮЛ / ЕГРИП',bki:'Кредитная история',fns:'ФНС',fssp:'ФССП',arbitration:'Арбитраж и Федресурс',aml:'Проверка 115-ФЗ'};
+const sourceNames:Record<string,string>={accounts:'Счета Эта Банка',client_card:'Карточка клиента',egrul:'ЕГРЮЛ / ЕГРИП',bki:'Кредитная история',fns:'ФНС',fssp:'ФССП',arbitration:'Арбитраж и Федресурс',aml:'Проверка 115-ФЗ'};
 const sourceStates:Record<string,string>={started:'Запрашиваем',ok:'Получен ответ',timeout:'Повторяем запрос',error:'Повторяем запрос',not_found:'Нет данных',no_consent:'Пропущен без согласия'};
 const inProgress=new Set(['submitted','enriching','scoring','conditions']);
 const steps=[{id:'enriching',label:'Собираем данные бизнеса'},{id:'scoring',label:'Рассчитываем условия'}];

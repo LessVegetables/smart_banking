@@ -65,8 +65,8 @@ function App(){
  const bare=loginScreen;
  return <div className={`app ${isMini?'mini':''} ${bare?'survey-mode':''}`}>
   {!bare&&<aside className={'sidebar '+(mobileMenu?'open':'')}>
-   <a className="brand" href={prefix+(staffPage?'/staff':'/')} onClick={e=>{e.preventDefault();navigate(staffPage?'staff':'home');}}><span className="alpha-mark">А<span/></span><div>Альфа<span>Бизнес</span></div></a>
-   <div className="workspace"><span className="workspace-icon"><Building2 size={18}/></span><div><b>{staffPage?'Альфа-Банк':'Мой бизнес'}</b><small>{staffPage?'Рабочее место сотрудника':'Кредитный кабинет'}</small></div><span className="online-dot"/></div>
+   <a className="brand" href={prefix+(staffPage?'/staff':'/')} onClick={e=>{e.preventDefault();navigate(staffPage?'staff':'home');}}><span className="eta-mark">η<span/></span><div>Эта<span>Бизнес</span></div></a>
+   <div className="workspace"><span className="workspace-icon"><Building2 size={18}/></span><div><b>{staffPage?'Эта Банк':'Мой бизнес'}</b><small>{staffPage?'Рабочее место сотрудника':'Кредитный кабинет'}</small></div><span className="online-dot"/></div>
    <p className="nav-caption">{staffPage?'РАБОЧЕЕ МЕСТО':'ВАШ КАБИНЕТ'}</p>
    <nav>{nav.map(n=><button key={n.id} className={page===n.id||(n.id==='staff'&&staffPage)?'active':''} onClick={()=>navigate(n.id)}><n.icon size={19}/>{n.label}{n.id==='applications'&&activeCount>0&&<em>{activeCount}</em>}</button>)}</nav>
    {!staffPage&&<div className="sidebar-tip"><div className="mini-stars"><Sparkles size={20}/></div><b>Начните с вашей идеи</b><p>Поможем выбрать деньги под задачу бизнеса.</p><button onClick={()=>start()}>Подать заявку <ArrowUpRight size={16}/></button></div>}
