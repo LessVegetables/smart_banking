@@ -6,7 +6,7 @@ import zipfile
 
 ROOT=Path(__file__).resolve().parents[1]
 OUTPUT=ROOT.parent/'alfa_hack-vps.zip'
-DIRECTORIES=('apps','config','scripts','docs','tests','deploy','dist')
+DIRECTORIES=('apps','config','scripts','docs','tests','deploy')
 FILES=('Dockerfile','compose.yaml','compose.vps.yaml','deploy.sh','.dockerignore','.gitignore','.gitattributes','.env.example',
        'package.json','package-lock.json','tsconfig.json','vite.config.ts','index.html','requirements.txt',
        'requirements-lock.txt','run.py','setup.ps1','start.ps1','README.md','VPS.md','ARCHITECTURE.md')

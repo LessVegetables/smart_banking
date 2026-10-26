@@ -10,11 +10,14 @@ from apps.api.fact_store import load_facts, save_facts
 
 def test_fact_store_round_trip_and_replace(tmp_path, monkeypatch):
     engine = create_engine(f"sqlite:///{tmp_path / 'legacy.db'}")
-    legacy_names = {'users', 'sessions', 'surveys', 'applications', 'submission_keys', 'documents', 'jobs'}
-    legacy_tables = [table for table in db.Base.metadata.sorted_tables if table.name in legacy_names]
-    db.Base.metadata.create_all(engine, tables=legacy_tables)
-    with engine.begin() as connection:  # columns later migrations add to legacy tables weren't there before Alembic
-        connection.exec_driver_sql('ALTER TABLE users DROP COLUMN staff_position')  # 0004_staff_actions
+    # Build the historical schema from its immutable migration, not live ORM models.
+    from alembic import command
+    from alembic.config import Config
+    config = Config('alembic.ini')
+    with engine.begin() as connection:
+        config.attributes['connection'] = connection
+        command.upgrade(config, '0001_baseline')
+        connection.exec_driver_sql('DROP TABLE alembic_version')
         connection.exec_driver_sql("INSERT INTO users (id, name, role) VALUES ('preserved-user', 'Existing user', 'customer')")
 
     monkeypatch.setattr(db, 'engine', engine)

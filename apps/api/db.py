@@ -29,32 +29,6 @@ class Login(Base):
     token:Mapped[str]=mapped_column(String,primary_key=True)
     user_id:Mapped[str]=mapped_column(ForeignKey('users.id'))
     expires:Mapped[float]=mapped_column(Float)
-class Survey(Base):
-    __tablename__='surveys'
-    id:Mapped[str]=mapped_column(String,primary_key=True,default=uid)
-    user_id:Mapped[str]=mapped_column(ForeignKey('users.id'),index=True)
-    version:Mapped[int]=mapped_column(Integer,default=1)
-    answers:Mapped[dict]=mapped_column(JSON,default=dict)
-    history:Mapped[list]=mapped_column(JSON,default=list)
-    created:Mapped[str]=mapped_column(String,default=now)
-class Application(Base):
-    __tablename__='applications'
-    id:Mapped[str]=mapped_column(String,primary_key=True,default=uid)
-    user_id:Mapped[str]=mapped_column(ForeignKey('users.id'),index=True)
-    submission_key:Mapped[str]=mapped_column(String,unique=True)
-    survey_id:Mapped[str]=mapped_column(String)
-    revision:Mapped[int]=mapped_column(Integer,default=1)
-    status:Mapped[str]=mapped_column(String,default='submitted')
-    answers:Mapped[dict]=mapped_column(JSON)
-    policy_snapshot:Mapped[dict]=mapped_column(JSON)
-    decisions:Mapped[list]=mapped_column(JSON,default=list)
-    events:Mapped[list]=mapped_column(JSON,default=list)
-    selected_offer:Mapped[dict|None]=mapped_column(JSON,nullable=True)
-    offer_expires:Mapped[float|None]=mapped_column(Float,nullable=True)
-    documents_reviewed:Mapped[int]=mapped_column(Integer,default=0)
-    created:Mapped[str]=mapped_column(String,default=now)
-    __mapper_args__={'version_id_col':revision,'version_id_generator':False}
-
 class LoanApplication(Base):
     """A v2 application (T19): the client's `ApplicationRequest`, its status (SPEC §13) and the engine's results."""
     __tablename__='loan_applications'
@@ -113,28 +87,6 @@ class PreApprovalRow(Base):
     computed_at:Mapped[str]=mapped_column(String,index=True)
     valid_until:Mapped[str|None]=mapped_column(String,nullable=True)  # ISO date
     result:Mapped[dict]=mapped_column(JSON)
-class SubmissionKey(Base):
-    __tablename__='submission_keys'
-    key:Mapped[str]=mapped_column(String,primary_key=True)
-    application_id:Mapped[str]=mapped_column(ForeignKey('applications.id'))
-class Document(Base):
-    __tablename__='documents'
-    id:Mapped[str]=mapped_column(String,primary_key=True,default=uid)
-    application_id:Mapped[str]=mapped_column(ForeignKey('applications.id'),index=True)
-    name:Mapped[str]=mapped_column(String)
-    media_type:Mapped[str]=mapped_column(String)
-    size:Mapped[int]=mapped_column(Integer)
-    status:Mapped[str]=mapped_column(String,default='uploaded')
-    created:Mapped[str]=mapped_column(String,default=now)
-class Job(Base):
-    __tablename__='jobs'
-    id:Mapped[str]=mapped_column(String,primary_key=True,default=uid)
-    application_id:Mapped[str]=mapped_column(ForeignKey('applications.id'),index=True)
-    state:Mapped[str]=mapped_column(String,default='pending')
-    attempts:Mapped[int]=mapped_column(Integer,default=0)
-    error:Mapped[str|None]=mapped_column(String,nullable=True)
-    available:Mapped[float]=mapped_column(Float,default=0)
-
 def init_db():
     """Adopt the pre-Alembic schema when present, then apply versioned migrations."""
     config=Config(str(Path(__file__).resolve().parents[2]/'alembic.ini'))

@@ -18,7 +18,7 @@ services:
       - '127.0.0.1:8000:8000'
     extra_hosts:
       - host.docker.internal:host-gateway
-    # Everything else (MOCK_SOURCES_*, SOURCE_*, WORLD_*, SCORECARD_*, LOG_LEVEL, S3_*) comes
+    # Everything else (MOCK_SOURCES_*, SOURCE_*, WORLD_*, SCORECARD_*, LOG_LEVEL) comes
     # from .env; the values below override it for the containers.
     env_file: &backend-env-file .env
     environment: &backend-environment
